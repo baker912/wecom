@@ -32,8 +32,8 @@ jobs:
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: 22
         script: |
-          mkdir -p /root/2
-          rm -rf /root/2/*
+          mkdir -p /var/www/wecom/
+          rm -rf /var/www/wecom/*
 
     - name: Deploy via SCP
       uses: appleboy/scp-action@master
@@ -43,5 +43,5 @@ jobs:
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: 22
         source: "dist/*"
-        target: "/root/2"
+        target: "/var/www/wecom/"
         strip_components: 1 # 去掉 dist 这一层目录，直接把内容传进去
