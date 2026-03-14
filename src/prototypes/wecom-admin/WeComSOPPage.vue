@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
+import PrototypeCodeLocation from '../../components/PrototypeCodeLocation.vue';
 import { 
   Settings, 
   Users, 
@@ -48,7 +49,6 @@ const menuItems = [
 ];
 
 onMounted(() => {
-  // 强制设置 viewport 为固定宽度，模拟 Web 端展示
   const viewport = document.querySelector('meta[name="viewport"]');
   if (viewport) {
     viewport.setAttribute('content', 'width=1440, initial-scale=0.5');
@@ -56,7 +56,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  // 离开页面时恢复移动端适配
   const viewport = document.querySelector('meta[name="viewport"]');
   if (viewport) {
     viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
@@ -74,7 +73,6 @@ const handleMenuClick = (item: typeof menuItems[0]) => {
 
 <template>
   <div class="flex min-h-screen bg-gray-100 font-sans text-sm min-w-[1280px]">
-    <!-- Sidebar -->
     <div class="w-16 hover:w-52 bg-[#1a1a1a] text-[#b3b3b3] flex flex-col shrink-0 transition-all duration-300 group overflow-hidden relative z-50">
       <div class="h-14 flex items-center px-4 border-b border-[#333] gap-2 whitespace-nowrap overflow-hidden">
         <button 
@@ -108,7 +106,6 @@ const handleMenuClick = (item: typeof menuItems[0]) => {
             />
           </div>
           
-          <!-- Submenu -->
           <div v-if="item.subItems && expandedMenu === item.label" class="bg-[#111] hidden group-hover:block">
             <div
               v-for="subItem in item.subItems"
@@ -134,9 +131,7 @@ const handleMenuClick = (item: typeof menuItems[0]) => {
       </div>
     </div>
 
-    <!-- Main Content -->
     <div class="flex-1 flex flex-col min-w-0">
-      <!-- Header -->
       <div class="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-10">
         <div class="flex items-center text-gray-500 gap-2">
           <span>运营工具</span>
@@ -152,10 +147,12 @@ const handleMenuClick = (item: typeof menuItems[0]) => {
         </div>
       </div>
 
-      <!-- Scrollable Content -->
+      <div class="px-6 pt-3">
+        <PrototypeCodeLocation folderPath="src/prototypes/wecom-admin" />
+      </div>
+
       <div class="flex-1 overflow-y-auto p-4">
         <div class="bg-white rounded shadow-sm p-6 min-h-full flex flex-col">
-          <!-- Search Filter -->
           <div class="grid grid-cols-3 gap-x-8 gap-y-4 mb-6">
             <div class="flex items-center gap-3">
               <span class="text-gray-600 w-20 text-right">SOP名称:</span>
@@ -206,7 +203,6 @@ const handleMenuClick = (item: typeof menuItems[0]) => {
 
           <div class="h-[1px] bg-gray-100 mb-6"></div>
 
-          <!-- Action Bar -->
           <div class="flex justify-between items-center mb-4">
             <div class="flex gap-3">
               <button class="h-9 px-4 bg-[#e53935] text-white rounded flex items-center gap-1 hover:bg-red-700 transition-colors shadow-sm">
@@ -221,7 +217,6 @@ const handleMenuClick = (item: typeof menuItems[0]) => {
                   一键关闭
                 </button>
                 
-                <!-- Tooltip mimicking the red popup in screenshot -->
                 <div class="absolute top-full left-0 mt-2 w-96 bg-[#e53935] text-white text-xs p-3 rounded shadow-lg z-20 hidden group-hover:block opacity-0 group-hover:opacity-100 transition-opacity">
                   <div class="absolute -top-1 left-6 w-2 h-2 bg-[#e53935] rotate-45"></div>
                   <p class="mb-1">1、一键关闭后，sop不再推送给顾问；</p>
@@ -238,7 +233,6 @@ const handleMenuClick = (item: typeof menuItems[0]) => {
             </div>
           </div>
 
-          <!-- Table -->
           <div class="flex-1 border border-gray-200 rounded overflow-hidden flex flex-col">
             <div class="overflow-x-auto">
               <table class="w-full min-w-[1000px]">
@@ -290,7 +284,6 @@ const handleMenuClick = (item: typeof menuItems[0]) => {
             </div>
           </div>
 
-          <!-- Pagination -->
           <div class="flex items-center justify-end gap-4 mt-4 text-gray-600 text-xs">
             <span>共 10 条</span>
             <div class="flex items-center gap-2 border border-gray-300 rounded px-2 py-1">
@@ -310,7 +303,6 @@ const handleMenuClick = (item: typeof menuItems[0]) => {
           </div>
         </div>
         
-        <!-- Footer -->
         <div class="mt-4 text-center text-xs text-gray-400 pb-2">
           吉ICP备09000793号 吉公网安备22017102000263号 运维联系电话: 0431-85990175 运维邮箱: ITEMail@faw-vw.com
         </div>

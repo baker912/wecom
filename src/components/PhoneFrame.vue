@@ -2,15 +2,17 @@
 import { useRoute, useRouter } from 'vue-router';
 import { computed } from 'vue';
 import { Home, Wifi, Signal, Info, Target, Layout } from 'lucide-vue-next';
+import PrototypeCodeLocation from './PrototypeCodeLocation.vue';
 
 const route = useRoute();
 const router = useRouter();
 
 // 需求描述数据映射
-const requirementInfoMap: Record<string, { title: string; subtitle: string; logic: string[] }> = {
+const requirementInfoMap: Record<string, { title: string; subtitle: string; folderPath: string; logic: string[] }> = {
   '/features/vin-tags': {
     title: '车辆信息标签按 VIN 码展示',
     subtitle: '核心需求：解决多辆车，有不同的车辆信息标签做区分展示的问题',
+    folderPath: 'src/features/vin-tags-aggregation',
     logic: [
       '不同 VIN 可以下拉单选：支持通过下拉菜单精准切换客户名下的不同车辆 VIN。'
     ]
@@ -18,6 +20,7 @@ const requirementInfoMap: Record<string, { title: string; subtitle: string; logi
   '/features/ai-analysis': {
     title: 'AI 智能分析功能',
     subtitle: '核心需求：利用大模型能力赋能销售跟进与话术优化',
+    folderPath: 'src/features/ai-analysis',
     logic: [
       'AI 悬浮助手：底部常驻 AI 助手球，提供即时的业务咨询支持。'
     ]
@@ -25,6 +28,7 @@ const requirementInfoMap: Record<string, { title: string; subtitle: string; logi
   '/content-library': {
     title: '营销内容库',
     subtitle: '核心需求：标准化的营销素材分发与追踪平台',
+    folderPath: 'src/prototypes/content-library',
     logic: [
       '全类型素材：支持海报、图文、短视频等多种形式的营销素材。'
     ]
@@ -32,6 +36,7 @@ const requirementInfoMap: Record<string, { title: string; subtitle: string; logi
   '/customer-profile': {
     title: '客户画像综合视图',
     subtitle: '核心需求：360度客户全景信息展示',
+    folderPath: 'src/prototypes/customer-profile',
     logic: [
       '基础画像：整合客户姓名、性别、联系方式等基本信息。'
     ]
@@ -127,6 +132,10 @@ const currentTime = computed(() => {
         <p class="text-xl text-gray-500 mb-10 font-medium border-l-4 border-blue-600 pl-4">
           {{ currentInfo.subtitle }}
         </p>
+
+        <div class="mb-8">
+          <PrototypeCodeLocation :folderPath="currentInfo.folderPath" />
+        </div>
 
         <div class="space-y-8">
           <div>

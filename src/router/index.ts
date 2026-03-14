@@ -1,10 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '../views/HomePage.vue'
-import CustomerProfilePage from '../views/CustomerProfilePage.vue'
-import WeComSOPPage from '../views/WeComSOPPage.vue'
 import ChangelogPage from '../views/ChangelogPage.vue'
 import RequirementPage from '../views/RequirementPage.vue'
-import ContentLibraryPage from '../views/ContentLibraryPage.vue'
+import CustomerProfilePage from '../prototypes/customer-profile/CustomerProfilePage.vue'
+import ContentLibraryPage from '../prototypes/content-library/ContentLibraryPage.vue'
+import WeComSOPPage from '../prototypes/wecom-admin/WeComSOPPage.vue'
 
 // 需求独立文件夹入口
 import VINProfilePage from '../features/vin-tags-aggregation/VINProfilePage.vue'

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
+import PrototypeCodeLocation from '../../components/PrototypeCodeLocation.vue';
 import { 
   Settings, 
   Users, 
@@ -150,6 +151,10 @@ const handleMenuClick = (item: typeof menuItems[0]) => {
           <span class="text-gray-700">李贤</span>
           <ChevronDown :size="14" class="text-gray-400" />
         </div>
+      </div>
+
+      <div class="px-6 pt-3">
+        <PrototypeCodeLocation folderPath="src/features/wecom-sop-sync" />
       </div>
 
       <!-- Scrollable Content -->

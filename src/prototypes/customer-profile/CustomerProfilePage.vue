@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import Header from '../components/Header.vue';
-import ProfileCard from '../components/ProfileCard.vue';
-import TagSection from '../components/TagSection.vue';
-import ArchiveSection from '../components/ArchiveSection.vue';
-import ActivitySection from '../components/ActivitySection.vue';
-import BottomBar from '../components/BottomBar.vue';
+import Header from '../../components/Header.vue';
+import ProfileCard from '../../components/ProfileCard.vue';
+import TagSection from '../../components/TagSection.vue';
+import ArchiveSection from '../../components/ArchiveSection.vue';
+import ActivitySection from '../../components/ActivitySection.vue';
+import BottomBar from '../../components/BottomBar.vue';
 import { 
   mockCustomer, 
   mockTagGroups, 
   mockArchiveTabs, 
   mockActivityTabs, 
   mockActivities 
-} from '../mock/data';
+} from '../../mock/data';
 </script>
 
 <template>

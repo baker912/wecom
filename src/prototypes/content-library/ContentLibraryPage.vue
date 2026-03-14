@@ -23,7 +23,6 @@ const goBack = () => {
 
 <template>
   <div class="min-h-screen bg-gray-50 flex flex-col">
-    <!-- Header -->
     <div class="bg-white fixed top-0 left-0 right-0 z-10 px-4 py-3 pt-12 flex items-center justify-between border-b border-gray-100">
       <button @click="goBack" class="p-1 -ml-1">
         <ChevronLeft :size="24" class="text-gray-700" />
@@ -34,10 +33,8 @@ const goBack = () => {
       </button>
     </div>
 
-    <!-- Padding for fixed header -->
     <div class="h-[92px]"></div>
 
-    <!-- Search -->
     <div class="bg-white px-4 py-2 pb-3">
       <div class="bg-gray-100 rounded-lg flex items-center px-3 py-2 gap-2">
         <Search :size="16" class="text-gray-400" />
@@ -45,7 +42,6 @@ const goBack = () => {
       </div>
     </div>
 
-    <!-- Tabs -->
     <div class="bg-white px-4 border-b border-gray-100 flex overflow-x-auto no-scrollbar gap-6">
       <button 
         v-for="tab in tabs" 
@@ -60,10 +56,8 @@ const goBack = () => {
       </button>
     </div>
 
-    <!-- Content List -->
     <div class="flex-1 p-4 space-y-3">
       <div v-for="item in contents" :key="item.id" class="bg-white rounded-xl p-3 flex gap-3 shadow-sm active:scale-[0.99] transition-transform">
-        <!-- Thumbnail -->
         <div class="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 text-gray-400">
           <Image v-if="item.type === 'image'" :size="24" />
           <FileText v-else-if="item.type === 'text'" :size="24" />
@@ -71,7 +65,6 @@ const goBack = () => {
           <FileText v-else :size="24" />
         </div>
         
-        <!-- Info -->
         <div class="flex-1 flex flex-col justify-between py-0.5">
           <div>
             <h3 class="text-[15px] font-bold text-gray-900 leading-snug mb-1">{{ item.title }}</h3>
