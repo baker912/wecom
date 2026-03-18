@@ -153,10 +153,6 @@ const handleMenuClick = (item: typeof menuItems[0]) => {
         </div>
       </div>
 
-      <div class="px-6 pt-3">
-        <PrototypeCodeLocation folderPath="src/features/wecom-sop-sync" />
-      </div>
-
       <!-- Scrollable Content -->
       <div class="flex-1 overflow-y-auto p-4">
         <div class="bg-white rounded shadow-sm p-6 min-h-full flex flex-col">
@@ -321,5 +317,12 @@ const handleMenuClick = (item: typeof menuItems[0]) => {
         </div>
       </div>
     </div>
+
+    <PrototypeCodeLocation
+      mode="floating"
+      position="top"
+      containerClass="left-1/2 -translate-x-1/2 right-auto bottom-auto"
+      folderPath="src/features/wecom-sop-sync"
+    />
   </div>
 </template>

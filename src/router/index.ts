@@ -10,6 +10,10 @@ import WeComSOPPage from '../prototypes/wecom-admin/WeComSOPPage.vue'
 import VINProfilePage from '../features/vin-tags-aggregation/VINProfilePage.vue'
 import AIProfilePage from '../features/ai-analysis/AIProfilePage.vue'
 import SOPPage from '../features/wecom-sop-sync/SOPPage.vue'
+import AudiencePackagePage from '../features/audience-package-management/AudiencePackagePage.vue'
+import AudiencePackageCreatePage from '../features/audience-package-management/AudiencePackageCreatePage.vue'
+import AudiencePackageDetailPage from '../features/audience-package-management/AudiencePackageDetailPage.vue'
+import PersonalSOPCreatePage from '../features/personal-sop/PersonalSOPCreatePage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -41,6 +45,27 @@ const router = createRouter({
       path: '/features/wecom-sop-sync',
       name: 'wecom-sop-sync',
       component: SOPPage
+    },
+    // 需求 4: 人群包管理
+    {
+      path: '/features/audience-package',
+      name: 'audience-package',
+      component: AudiencePackagePage
+    },
+    {
+      path: '/features/audience-package/new',
+      name: 'audience-package-new',
+      component: AudiencePackageCreatePage
+    },
+    {
+      path: '/features/audience-package/:id',
+      name: 'audience-package-detail',
+      component: AudiencePackageDetailPage
+    },
+    {
+      path: '/features/personal-sop/new',
+      name: 'personal-sop-new',
+      component: PersonalSOPCreatePage
     },
     {
       path: '/content-library',
