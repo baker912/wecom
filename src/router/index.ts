@@ -58,6 +58,11 @@ const router = createRouter({
       component: AudiencePackageCreatePage
     },
     {
+      path: '/features/audience-package/:id/view',
+      name: 'audience-package-view',
+      component: AudiencePackageCreatePage
+    },
+    {
       path: '/features/audience-package/:id',
       name: 'audience-package-detail',
       component: AudiencePackageDetailPage

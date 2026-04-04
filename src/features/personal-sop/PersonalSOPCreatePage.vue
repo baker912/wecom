@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import PrototypeCodeLocation from '../../components/PrototypeCodeLocation.vue';
-import { BarChart2, Briefcase, ChevronDown, ChevronLeft, LayoutGrid, MessageCircle, MessageSquare, Monitor, Plus, Settings, User, Users } from 'lucide-vue-next';
+import { BarChart2, Briefcase, ChevronDown, ChevronLeft, LayoutGrid, MessageCircle, MessageSquare, Monitor, Plus, Search, Settings, User, Users, X } from 'lucide-vue-next';
 
 const router = useRouter();
 const activeMenu = ref('个人SOP');
@@ -52,9 +52,45 @@ const sopDescCount = computed(() => form.value.description.length);
 
 const sopTypeOptions = ['新客激活', '生日关怀', '保养提醒', '沉默唤醒'];
 const audiencePackageOptions = [
-  { id: 'AP20260201002', name: '高潜客户圈选' },
-  { id: 'AP20260201003', name: '沉默客户唤醒' }
+  { id: 'AP20260201001', name: '这里是人群包名称', desc: '这里是描述', createMode: '标签组合圈选', creator: '朱云', dept: '北京奥迪世达汽车销售服务有限公司', createdAt: '2026-02-11 10:45:02', status: '已启用' },
+  { id: 'AP20260201002', name: '高潜客户圈选', desc: 'CDP标签+属性组合圈选', createMode: '标签组合圈选', creator: '李松浩', dept: '上海奥迪东昌汽车销售服务有限公司', createdAt: '2026-02-12 09:12:36', status: '已启用' },
+  { id: 'AP20260201003', name: '沉默客户唤醒', desc: '近90天无互动客户', createMode: '导入车辆VIN码', creator: '佟麟阁', dept: '广州奥迪锦龙汽车销售服务有限公司', createdAt: '2026-02-13 16:22:10', status: '已停用' },
+  { id: 'AP20260201004', name: '保养到期提醒', desc: '保养到期时间属性筛选', createMode: '标签组合圈选', creator: '李万滔', dept: '北京奥迪世达汽车销售服务有限公司', createdAt: '2026-02-14 11:08:44', status: '已启用' },
+  { id: 'AP20260201005', name: '新客激活人群', desc: '新近成交客户激活', createMode: '导入车辆VIN码', creator: '朱云', dept: '上海奥迪东昌汽车销售服务有限公司', createdAt: '2026-02-15 14:30:18', status: '已启用' },
+  { id: 'AP20260201006', name: '置换意向客户', desc: '置换意向标签圈选', createMode: '标签组合圈选', creator: '佟麟阁', dept: '广州奥迪锦龙汽车销售服务有限公司', createdAt: '2026-02-16 09:46:55', status: '已停用' }
 ];
+
+const packagePickerKeyword = ref('');
+const showPackagePicker = ref(false);
+
+const filteredAudiencePackages = computed(() => {
+  const enabledList = audiencePackageOptions.filter(item => item.status === '已启用');
+  const keyword = packagePickerKeyword.value.trim();
+  if (!keyword) return enabledList;
+  return enabledList.filter(item => {
+    return [item.id, item.name, item.desc, item.createMode, item.creator, item.dept]
+      .some(value => value.includes(keyword));
+  });
+});
+
+const selectedAudiencePackage = computed(() => {
+  return audiencePackageOptions.find(item => item.id === form.value.audiencePackageId) || null;
+});
+
+const openPackagePicker = () => {
+  packagePickerKeyword.value = '';
+  showPackagePicker.value = true;
+};
+
+const closePackagePicker = () => {
+  showPackagePicker.value = false;
+  packagePickerKeyword.value = '';
+};
+
+const selectAudiencePackage = (id: string) => {
+  form.value.audiencePackageId = id;
+  closePackagePicker();
+};
 
 const addStaff = () => {
   form.value.staff = [...form.value.staff, `员工${form.value.staff.length + 1}`];
@@ -244,11 +280,23 @@ const handleSubmit = () => {
                   <span class="text-[#e53935] mr-1">*</span>选择人群包:
                 </div>
                 <div class="max-w-xl">
-                  <div class="h-10 px-3 border border-gray-300 rounded flex items-center bg-white">
-                    <select v-model="form.audiencePackageId" class="w-full bg-transparent outline-none text-gray-700">
-                      <option value="" disabled>请选择</option>
-                      <option v-for="opt in audiencePackageOptions" :key="opt.id" :value="opt.id">{{ opt.name }}</option>
-                    </select>
+                  <div class="flex items-center gap-3 mb-2">
+                    <button type="button" @click="openPackagePicker" class="text-sm font-bold text-[#e53935] inline-flex items-center gap-2 border-b border-[#e53935] hover:border-red-700 transition-colors">
+                      <Plus :size="16" />
+                      选择人群包
+                    </button>
+                  </div>
+                  <button type="button" @click="openPackagePicker" class="w-full h-10 px-3 border border-gray-300 rounded bg-white flex items-center justify-between gap-3 text-left">
+                    <div :class="`text-sm ${selectedAudiencePackage ? 'text-gray-700' : 'text-gray-400'}`">
+                      {{ selectedAudiencePackage ? `${selectedAudiencePackage.name}（${selectedAudiencePackage.id}）` : '请选择' }}
+                    </div>
+                    <ChevronDown :size="16" class="text-gray-400" />
+                  </button>
+                  <div v-if="selectedAudiencePackage" class="mt-3 border border-gray-200 rounded bg-gray-50 p-3 text-xs text-gray-600 leading-6">
+                    <div><span class="text-gray-500">人群包名称：</span>{{ selectedAudiencePackage.name }}</div>
+                    <div><span class="text-gray-500">创建方式：</span>{{ selectedAudiencePackage.createMode }}</div>
+                    <div><span class="text-gray-500">创建人：</span>{{ selectedAudiencePackage.creator }}</div>
+                    <div><span class="text-gray-500">所属门店：</span>{{ selectedAudiencePackage.dept }}</div>
                   </div>
                   <div v-if="showAudiencePackageError" class="text-xs text-[#e53935] mt-2">
                     请选择人群包
@@ -313,5 +361,66 @@ const handleSubmit = () => {
       containerClass="left-1/2 -translate-x-1/2 right-auto bottom-auto"
       folderPath="src/features/personal-sop"
     />
+
+    <div v-if="showPackagePicker" class="fixed inset-0 z-[90] bg-black/30 flex items-center justify-center p-6">
+      <div class="bg-white w-full max-w-6xl rounded shadow-lg border border-gray-200">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div class="text-gray-800 font-bold">选择人群包</div>
+          <button @click="closePackagePicker" class="p-1 text-gray-400 hover:text-gray-600">
+            <X :size="18" />
+          </button>
+        </div>
+        <div class="px-6 py-4">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="relative flex-1 max-w-sm">
+              <Search :size="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input v-model="packagePickerKeyword" type="text" placeholder="请输入人群包名称/ID/创建人" class="w-full h-10 pl-9 pr-3 border border-gray-300 rounded focus:border-red-500 focus:outline-none" />
+            </div>
+            <div class="text-xs text-gray-500">共 {{ filteredAudiencePackages.length }} 个人群包</div>
+          </div>
+
+          <div class="border border-gray-200 rounded overflow-hidden">
+            <div class="grid grid-cols-[140px_180px_1.3fr_130px_100px_180px_160px_100px_90px] bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-600">
+              <div class="px-4 py-3">人群包ID</div>
+              <div class="px-4 py-3">人群包名称</div>
+              <div class="px-4 py-3">描述</div>
+              <div class="px-4 py-3">创建方式</div>
+              <div class="px-4 py-3">创建人</div>
+              <div class="px-4 py-3">所属门店</div>
+              <div class="px-4 py-3">创建时间</div>
+              <div class="px-4 py-3">状态</div>
+              <div class="px-4 py-3 text-center">操作</div>
+            </div>
+            <div class="max-h-[420px] overflow-y-auto">
+              <div v-for="item in filteredAudiencePackages" :key="item.id" class="grid grid-cols-[140px_180px_1.3fr_130px_100px_180px_160px_100px_90px] border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50">
+                <div class="px-4 py-3 font-mono text-xs text-gray-500">{{ item.id }}</div>
+                <div class="px-4 py-3 font-bold text-gray-900">{{ item.name }}</div>
+                <div class="px-4 py-3 text-gray-600 truncate">{{ item.desc }}</div>
+                <div class="px-4 py-3">{{ item.createMode }}</div>
+                <div class="px-4 py-3">{{ item.creator }}</div>
+                <div class="px-4 py-3 truncate">{{ item.dept }}</div>
+                <div class="px-4 py-3 text-gray-500">{{ item.createdAt }}</div>
+                <div class="px-4 py-3">
+                  <span :class="`px-2 py-1 rounded-full text-xs ${item.status === '已启用' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}`">{{ item.status }}</span>
+                </div>
+                <div class="px-4 py-3 flex items-center justify-center">
+                  <button type="button" @click="selectAudiencePackage(item.id)" class="h-8 px-3 rounded border border-[#e53935] text-[#e53935] hover:bg-red-50 transition-colors text-xs font-bold">
+                    选择
+                  </button>
+                </div>
+              </div>
+              <div v-if="filteredAudiencePackages.length === 0" class="py-12 text-center text-sm text-gray-400">
+                暂无人群包
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 pb-5 flex justify-end gap-3 border-t border-gray-100 pt-4">
+          <button @click="closePackagePicker" class="h-9 px-4 border border-gray-300 text-gray-600 rounded hover:bg-gray-50 transition-colors">
+            关闭
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

@@ -88,7 +88,7 @@ const openDetail = (row: (typeof rows.value)[number]) => {
     createdAt: row.createdAt,
     status: row.status
   }));
-  router.push(`/features/audience-package/${row.id}`);
+  router.push(`/features/audience-package/${row.id}/view`);
 };
 
 const handleMenuClick = (item: typeof menuItems[0]) => {
