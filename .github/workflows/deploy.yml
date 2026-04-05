@@ -2,10 +2,14 @@ name: Deploy to Tencent Cloud Server
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[deploy]')
 
     steps:
     - name: Checkout Code

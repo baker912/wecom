@@ -3,7 +3,6 @@ import HomePage from '../views/HomePage.vue'
 import ChangelogPage from '../views/ChangelogPage.vue'
 import RequirementPage from '../views/RequirementPage.vue'
 import CustomerProfilePage from '../prototypes/customer-profile/CustomerProfilePage.vue'
-import ContentLibraryPage from '../prototypes/content-library/ContentLibraryPage.vue'
 import WeComSOPPage from '../prototypes/wecom-admin/WeComSOPPage.vue'
 
 // 需求独立文件夹入口
@@ -14,6 +13,7 @@ import AudiencePackagePage from '../features/audience-package-management/Audienc
 import AudiencePackageCreatePage from '../features/audience-package-management/AudiencePackageCreatePage.vue'
 import AudiencePackageDetailPage from '../features/audience-package-management/AudiencePackageDetailPage.vue'
 import PersonalSOPCreatePage from '../features/personal-sop/PersonalSOPCreatePage.vue'
+import ContentLibraryWaterfallPage from '../features/content-library-waterfall/ContentLibraryWaterfallPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -75,7 +75,7 @@ const router = createRouter({
     {
       path: '/content-library',
       name: 'content-library',
-      component: ContentLibraryPage
+      component: ContentLibraryWaterfallPage
     },
     {
       path: '/wecom-sop',

@@ -273,8 +273,8 @@ const sprints = ref([
         id: 'REQ-SPRINT7-01',
         title: '人群包管理',
         module: '自建平台',
-        progress: 0,
-        status: '设计中',
+        progress: 100,
+        status: '设计完成',
         misId: 'MISMS20260311111749',
         misStatus: '产品设计中',
         version: 'v1.0.0',
@@ -282,6 +282,20 @@ const sprints = ref([
         icon: Users,
         link: '/features/audience-package',
         description: '通过调用cdp标签和属性值圈选人群包触发sop，支持全量cdp客户标签和时间等属性值圈选；'
+      },
+      {
+        id: 'REQ-SPRINT7-02',
+        title: '内容库瀑布流改造',
+        module: '自建平台',
+        progress: 0,
+        status: '设计中',
+        misId: 'MISMS20260405101010',
+        misStatus: '需求确认中',
+        version: 'v1.1.0',
+        isExternalPrototype: false,
+        icon: LayoutGrid,
+        link: '/content-library',
+        description: '将内容库现有的列表展示方式改造为瀑布流展示，提升多图/长图浏览体验。'
       }
     ]
   },
@@ -363,7 +377,14 @@ const scrollToSprint = (sprintName: string) => {
           </div>
           <h1 class="text-3xl font-bold text-gray-900 tracking-tight">奥迪企业微信原型方案</h1>
         </div>
-        <p class="text-gray-500 text-sm font-medium tracking-wide pl-1">展示部分功能原型及进行简单的需求进度跟踪，系统持续优化中</p>
+        <div class="flex items-center gap-2 pl-1">
+          <p class="text-gray-500 text-sm font-medium tracking-wide">展示部分功能原型及进行简单的需求进度跟踪，系统持续优化中。</p>
+          <span class="text-gray-500 text-sm font-medium tracking-wide">点击辑入</span>
+          <a href="https://github.com/baker912/wecom" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors text-xs font-medium border border-gray-200">
+            <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+            代码仓库
+          </a>
+        </div>
       </div>
 
       <!-- 右侧：核心入口卡片 (Expanded) -->

@@ -380,29 +380,21 @@ const handleSubmit = () => {
           </div>
 
           <div class="border border-gray-200 rounded overflow-hidden">
-            <div class="grid grid-cols-[140px_180px_1.3fr_130px_100px_180px_160px_100px_90px] bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-600">
+            <div class="grid grid-cols-[160px_240px_1fr_120px_1.5fr_100px] bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-600">
               <div class="px-4 py-3">人群包ID</div>
               <div class="px-4 py-3">人群包名称</div>
-              <div class="px-4 py-3">描述</div>
               <div class="px-4 py-3">创建方式</div>
               <div class="px-4 py-3">创建人</div>
               <div class="px-4 py-3">所属门店</div>
-              <div class="px-4 py-3">创建时间</div>
-              <div class="px-4 py-3">状态</div>
               <div class="px-4 py-3 text-center">操作</div>
             </div>
             <div class="max-h-[420px] overflow-y-auto">
-              <div v-for="item in filteredAudiencePackages" :key="item.id" class="grid grid-cols-[140px_180px_1.3fr_130px_100px_180px_160px_100px_90px] border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50">
-                <div class="px-4 py-3 font-mono text-xs text-gray-500">{{ item.id }}</div>
-                <div class="px-4 py-3 font-bold text-gray-900">{{ item.name }}</div>
-                <div class="px-4 py-3 text-gray-600 truncate">{{ item.desc }}</div>
+              <div v-for="item in filteredAudiencePackages" :key="item.id" class="grid grid-cols-[160px_240px_1fr_120px_1.5fr_100px] border-b border-gray-100 text-sm text-gray-700 hover:bg-gray-50 items-center">
+                <div class="px-4 py-3">{{ item.id }}</div>
+                <div class="px-4 py-3">{{ item.name }}</div>
                 <div class="px-4 py-3">{{ item.createMode }}</div>
                 <div class="px-4 py-3">{{ item.creator }}</div>
                 <div class="px-4 py-3 truncate">{{ item.dept }}</div>
-                <div class="px-4 py-3 text-gray-500">{{ item.createdAt }}</div>
-                <div class="px-4 py-3">
-                  <span :class="`px-2 py-1 rounded-full text-xs ${item.status === '已启用' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}`">{{ item.status }}</span>
-                </div>
                 <div class="px-4 py-3 flex items-center justify-center">
                   <button type="button" @click="selectAudiencePackage(item.id)" class="h-8 px-3 rounded border border-[#e53935] text-[#e53935] hover:bg-red-50 transition-colors text-xs font-bold">
                     选择

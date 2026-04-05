@@ -3,7 +3,9 @@
 本项目后续统一按此方式部署到服务器。
 
 ## 部署方式
-- 触发方式：手动触发 GitHub Actions（workflow_dispatch）
+- 触发方式（二选一）：
+  - 手动触发 GitHub Actions（workflow_dispatch）
+  - 推送到 `main` 且提交信息包含 `[deploy]`（用于“我明确要求这次要部署”的场景）
 - 构建产物：`dist/`
 - 部署目标：腾讯云服务器目录 `/var/www/wecom/`
 - 部署机制：GitHub Actions 工作流通过 SSH 清空目标目录后，SCP 上传 `dist/*`
@@ -44,7 +46,7 @@ git push origin main
 
 ## 原则（必须遵守）
 - 任何代码修改默认不触发部署
-- 只有明确说明“需要部署/开始部署”时，才允许手动触发部署工作流
+- 只有明确说明“需要部署/开始部署”时，才允许触发部署（手动触发或提交信息加 `[deploy]`）
 
 ## 工作流做了什么
 1. 安装依赖并构建：
