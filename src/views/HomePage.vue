@@ -6,7 +6,7 @@ import { computed, ref } from 'vue';
 const router = useRouter();
 
 // Sprint Accordion Logic
-const expandedSprint = ref<string | null>('Sprint 5'); // 默认展开第一个
+const expandedSprint = ref<string | null>('Sprint 6'); // 默认展开第一个
 
 const toggleSprint = (sprintName: string) => {
   if (expandedSprint.value === sprintName) {
@@ -34,7 +34,7 @@ const toast = (message: string) => {
 
 // Filters & Navigation
 const selectedRequirementStatus = ref('全部');
-const requirementStatuses = ['全部', '设计中', '设计完成', '开发中', '测试中', '已上线'];
+const requirementStatuses = ['全部', '设计中', '设计完成', '开发中', '测试中', '已发版'];
 
 const navigateTo = (path: string) => {
   if (path === '/content-library') {
@@ -100,7 +100,7 @@ const calendarDays = computed(() => {
     '设计完成': 33,
     '开发中': 66,
     '测试中': 85,
-    '已上线': 100
+    '已发版': 100
   };
 
   return milestones.map(milestone => {
@@ -141,8 +141,8 @@ const sprints = ref([
   {
     name: 'Sprint 4',
     dateRange: '2026/03/01 - 2026/03/19',
-    status: '测试中',
-    statusColor: 'bg-amber-50 text-amber-600 border border-amber-100',
+    status: '已发版',
+    statusColor: 'bg-blue-50 text-blue-600 border border-blue-100',
     targetDate: '2026-03-19',
     requirements: [
       {
@@ -150,7 +150,7 @@ const sprints = ref([
         title: '安全工单',
         module: '自建平台',
         progress: 35,
-        status: '测试中',
+        status: '已发版',
         misId: 'MISMS20260304155247',
         misStatus: '需求实施中',
         version: 'v1.0.0',
@@ -164,7 +164,7 @@ const sprints = ref([
         title: '邀约活动埋点',
         module: '自建平台',
         progress: 40,
-        status: '测试中',
+        status: '已发版',
         misId: 'MISMS20260306173640',
         misStatus: '需求确认中',
         version: 'v1.0.1',
@@ -178,7 +178,7 @@ const sprints = ref([
         title: '售后自动消息推送',
         module: '自建平台',
         progress: 30,
-        status: '测试中',
+        status: '已发版',
         misId: 'MISMS20260227165123',
         misStatus: '需求实施中',
         version: 'v1.0.0',
@@ -192,7 +192,7 @@ const sprints = ref([
         title: '素材详情优化',
         module: '客户端',
         progress: 55,
-        status: '测试中',
+        status: '已发版',
         misId: 'MISMS20260129102608',
         misStatus: '产品设计中',
         version: 'v1.1.0',
@@ -206,7 +206,7 @@ const sprints = ref([
         title: '三系统经销商数据同步',
         module: '自建平台',
         progress: 45,
-        status: '测试中',
+        status: '已发版',
         misId: 'MISMS20260313100859',
         misStatus: '需求确认中',
         version: 'v1.2.0',
@@ -223,9 +223,17 @@ const sprints = ref([
     status: '进行中',
     statusColor: 'bg-blue-50 text-blue-600 border border-blue-100',
     targetDate: '2026-04-09',
+    requirements: []
+  },
+  {
+    name: 'Sprint 6',
+    dateRange: '2026/04/10 - 2026/04/23',
+    status: '规划中',
+    statusColor: 'bg-gray-50 text-gray-500 border border-gray-200',
+    targetDate: '2026-04-23',
     requirements: [
       {
-        id: 'REQ-SPRINT5-01',
+        id: 'REQ-SPRINT6-01',
         title: '车辆信息标签按VIN码展示',
         module: '客户端',
         progress: 100,
@@ -239,7 +247,7 @@ const sprints = ref([
         description: '在移动端客户画像中，支持按VIN码维度聚合展示车辆信息标签'
       },
       {
-        id: 'REQ-SPRINT5-02',
+        id: 'REQ-SPRINT6-02',
         title: 'AI智能分析功能',
         module: '客户端',
         progress: 80,
@@ -255,14 +263,14 @@ const sprints = ref([
     ]
   },
   {
-    name: 'Sprint 6',
-    dateRange: '2026/04/10 - 2026/04/23',
+    name: 'Sprint 7',
+    dateRange: '2026/04/24 - 2026/05/07',
     status: '规划中',
     statusColor: 'bg-gray-50 text-gray-500 border border-gray-200',
-    targetDate: '2026-04-23',
+    targetDate: '2026-05-07',
     requirements: [
       {
-        id: 'REQ-SPRINT6-01',
+        id: 'REQ-SPRINT7-01',
         title: '人群包管理',
         module: '自建平台',
         progress: 0,
@@ -276,14 +284,6 @@ const sprints = ref([
         description: '通过调用cdp标签和属性值圈选人群包触发sop，支持全量cdp客户标签和时间等属性值圈选；'
       }
     ]
-  },
-  {
-    name: 'Sprint 7',
-    dateRange: '2026/04/24 - 2026/05/07',
-    status: '规划中',
-    statusColor: 'bg-gray-50 text-gray-500 border border-gray-200',
-    targetDate: '2026-05-07',
-    requirements: []
   },
   {
     name: 'Sprint 8',
@@ -308,7 +308,7 @@ const filteredSprints = computed(() => {
     const devCount = sprint.requirements.filter(r => r.status === '开发中').length;
     const testingCount = sprint.requirements.filter(r => r.status === '测试中').length;
     const designCount = sprint.requirements.filter(r => r.status === '设计完成').length;
-    const onlineCount = sprint.requirements.filter(r => r.status === '已上线').length;
+    const onlineCount = sprint.requirements.filter(r => r.status === '已发版').length;
 
     return {
       ...sprint,
@@ -576,7 +576,7 @@ const scrollToSprint = (sprintName: string) => {
                     <span v-if="sprint.stats.devCount > 0" class="px-2 py-0.5 bg-amber-50 text-amber-600 rounded text-xs font-bold border border-amber-100">{{ sprint.stats.devCount }} 开发中</span>
                     <span v-if="sprint.stats.testingCount > 0" class="px-2 py-0.5 bg-purple-50 text-purple-600 rounded text-xs font-bold border border-purple-100">{{ sprint.stats.testingCount }} 测试中</span>
                     <span v-if="sprint.stats.designCount > 0" class="px-2 py-0.5 bg-green-50 text-green-600 rounded text-xs font-bold border border-green-100">{{ sprint.stats.designCount }} 设计完成</span>
-                    <span v-if="sprint.stats.onlineCount > 0" class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs font-bold border border-blue-100">{{ sprint.stats.onlineCount }} 已上线</span>
+                    <span v-if="sprint.stats.onlineCount > 0" class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-xs font-bold border border-blue-100">{{ sprint.stats.onlineCount }} 已发版</span>
                   </div>
                 </div>
               </div>
@@ -647,7 +647,7 @@ const scrollToSprint = (sprintName: string) => {
                           req.status === '设计完成' ? 'text-green-600 bg-green-50 border-green-100' :
                           req.status === '开发中' ? 'text-amber-600 bg-amber-50 border-amber-100' :
                           req.status === '测试中' ? 'text-purple-600 bg-purple-50 border-purple-100' :
-                          req.status === '已上线' ? 'text-blue-600 bg-blue-50 border-blue-100' :
+                          req.status === '已发版' ? 'text-blue-600 bg-blue-50 border-blue-100' :
                           'text-gray-600 bg-gray-50 border-gray-200'
                         ]"
                       >
