@@ -3,7 +3,7 @@
 本项目后续统一按此方式部署到服务器。
 
 ## 部署方式
-- 触发方式：将代码推送到 `main` 分支
+- 触发方式：手动触发 GitHub Actions（workflow_dispatch）
 - 构建产物：`dist/`
 - 部署目标：腾讯云服务器目录 `/var/www/wecom/`
 - 部署机制：GitHub Actions 工作流通过 SSH 清空目标目录后，SCP 上传 `dist/*`
@@ -29,7 +29,7 @@ npm install
 npm run build
 ```
 
-2. 提交并推送到 `main` 分支：
+2. 提交并推送到 `main` 分支（不会自动部署）：
 
 ```bash
 git add -A
@@ -37,7 +37,14 @@ git commit -m "your message"
 git push origin main
 ```
 
-3. 在 GitHub Actions 页面查看 `Deploy to Tencent Cloud Server` 工作流运行结果。
+3. 手动触发部署：
+- GitHub 仓库 → Actions → `Deploy to Tencent Cloud Server` → Run workflow → 选择 `main` → Run workflow
+
+4. 在 GitHub Actions 页面查看 `Deploy to Tencent Cloud Server` 工作流运行结果。
+
+## 原则（必须遵守）
+- 任何代码修改默认不触发部署
+- 只有明确说明“需要部署/开始部署”时，才允许手动触发部署工作流
 
 ## 工作流做了什么
 1. 安装依赖并构建：
@@ -61,5 +68,4 @@ git push origin main
 - 服务器账号是否允许 SSH 登录、是否被安全组/防火墙拦截
 
 ### 2) 构建失败
-在 Actions 日志里查看 `Build Project` 步骤输出，按报错修复后再次 push 触发部署。
-
+在 Actions 日志里查看 `Build Project` 步骤输出，按报错修复后重新手动触发部署。
