@@ -14,6 +14,7 @@ import AudiencePackageCreatePage from '../features/audience-package-management/A
 import AudiencePackageDetailPage from '../features/audience-package-management/AudiencePackageDetailPage.vue'
 import PersonalSOPCreatePage from '../features/personal-sop/PersonalSOPCreatePage.vue'
 import ContentLibraryWaterfallPage from '../features/content-library-waterfall/ContentLibraryWaterfallPage.vue'
+import SessionArchivePage from '../features/session-archive/SessionArchivePage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -76,6 +77,11 @@ const router = createRouter({
       path: '/content-library',
       name: 'content-library',
       component: ContentLibraryWaterfallPage
+    },
+    {
+      path: '/features/session-archive',
+      name: 'session-archive',
+      component: SessionArchivePage
     },
     {
       path: '/wecom-sop',

@@ -37,10 +37,6 @@ const selectedRequirementStatus = ref('全部');
 const requirementStatuses = ['全部', '设计中', '设计完成', '开发中', '测试中', '已发版'];
 
 const navigateTo = (path: string) => {
-  if (path === '/content-library') {
-    toast('正在开发中');
-    return;
-  }
   router.push(path);
 };
 
@@ -259,6 +255,20 @@ const sprints = ref([
         icon: Sparkles,
         link: '/features/ai-analysis',
         description: '基于大模型能力，为经销商提供客户沟通话术建议及画像深度解析'
+      },
+      {
+        id: 'REQ-SPRINT6-03',
+        title: '会话存档管理',
+        module: '自建平台',
+        progress: 100,
+        status: '设计完成',
+        misId: 'MISMS20260406090100',
+        misStatus: '需求实施中',
+        version: 'v1.1.0',
+        isExternalPrototype: false,
+        icon: Database,
+        link: '/features/session-archive',
+        description: '将企微原生中顾问和客户的聊天记录拉取下来进行展示，支持关键字搜索、条件筛选和导出。'
       }
     ]
   },
