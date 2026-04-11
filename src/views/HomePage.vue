@@ -306,6 +306,20 @@ const sprints = ref([
         icon: LayoutGrid,
         link: '/content-library',
         description: '将内容库现有的列表展示方式改造为瀑布流展示，提升多图/长图浏览体验。'
+      },
+      {
+        id: 'REQ-SPRINT7-03',
+        title: '删除好友设置',
+        module: '自建平台',
+        progress: 0,
+        status: '设计中',
+        misId: 'MISMS20260411123456',
+        misStatus: '需求确认中',
+        version: 'v1.1.0',
+        isExternalPrototype: false,
+        icon: Users,
+        link: '/features/delete-friend-settings',
+        description: '系统设置-员工管理：列表展示及开关编辑功能'
       }
     ]
   },

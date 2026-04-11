@@ -15,6 +15,7 @@ import AudiencePackageDetailPage from '../features/audience-package-management/A
 import PersonalSOPCreatePage from '../features/personal-sop/PersonalSOPCreatePage.vue'
 import ContentLibraryWaterfallPage from '../features/content-library-waterfall/ContentLibraryWaterfallPage.vue'
 import SessionArchivePage from '../features/session-archive/SessionArchivePage.vue'
+import DeleteFriendSettingsPage from '../features/delete-friend-settings/DeleteFriendSettingsPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -82,6 +83,11 @@ const router = createRouter({
       path: '/features/session-archive',
       name: 'session-archive',
       component: SessionArchivePage
+    },
+    {
+      path: '/features/delete-friend-settings',
+      name: 'delete-friend-settings',
+      component: DeleteFriendSettingsPage
     },
     {
       path: '/wecom-sop',

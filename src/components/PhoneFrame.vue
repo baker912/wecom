@@ -26,11 +26,13 @@ const requirementInfoMap: Record<string, { title: string; subtitle: string; fold
     ]
   },
   '/content-library': {
-    title: '营销内容库',
-    subtitle: '核心需求：标准化的营销素材分发与追踪平台',
-    folderPath: 'src/prototypes/content-library',
+    title: '内容库瀑布流改造',
+    subtitle: '核心需求：瀑布流展示提升多图/长图浏览与内容触达效率',
+    folderPath: 'src/features/content-library-waterfall',
     logic: [
-      '全类型素材：支持海报、图文、短视频等多种形式的营销素材。'
+      '瀑布流双列：内容以双列瀑布流方式展示，提升浏览效率。',
+      '筛选抽屉：支持车系/创作者/内容类型/发布时间/排序方式筛选。',
+      '内容详情：点击卡片查看详情，支持视频播放与互动入口。'
     ]
   },
   '/customer-profile': {
