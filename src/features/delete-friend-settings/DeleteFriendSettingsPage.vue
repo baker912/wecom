@@ -192,14 +192,12 @@ const selectedIds = ref<number[]>([]);
 
 // 模拟分页数据（假设当前就在第1页，展示这8条数据，但总共有108条查询结果）
 const isCurrentPageAllSelected = computed(() => tableData.value.length > 0 && tableData.value.every(row => selectedIds.value.includes(row.id)));
-const isGlobalAllSelected = ref(false); // 记录是否点击了“一键全选”（选中了所有108条）
 
 // 姓名左侧的当前页全选
 const toggleCurrentPageAll = () => {
   if (isCurrentPageAllSelected.value) {
     // 取消当前页的选中状态
     selectedIds.value = selectedIds.value.filter(id => !tableData.value.find(r => r.id === id));
-    isGlobalAllSelected.value = false;
   } else {
     // 选中当前页的所有数据
     const currentPageIds = tableData.value.map(row => row.id);
@@ -208,18 +206,10 @@ const toggleCurrentPageAll = () => {
   }
 };
 
-// 一键全选（选中当前筛选条件下的所有数据，这里用个特定的标识或文字提示来模拟）
-const toggleGlobalAll = () => {
-  isGlobalAllSelected.value = true;
-  // 选中当前页以获得视觉反馈
-  selectedIds.value = tableData.value.map(row => row.id);
-};
-
 // 单条勾选时如果取消，也要同步取消全局全选状态
 const toggleSingle = (id: number) => {
   if (selectedIds.value.includes(id)) {
     selectedIds.value = selectedIds.value.filter(i => i !== id);
-    isGlobalAllSelected.value = false;
   } else {
     selectedIds.value.push(id);
   }
@@ -238,24 +228,15 @@ const openBatchModal = () => {
 const confirmBatch = () => {
   const autoDel = batchOption.value === '1';
   
-  if (isGlobalAllSelected.value) {
-    // 如果是全局全选，这里模拟将所有数据都更新（真实情况下会调用后端接口）
-    tableData.value.forEach(row => {
+  tableData.value.forEach(row => {
+    if (selectedIds.value.includes(row.id)) {
       row.autoDelete = autoDel;
-    });
-    alert('已成功为所有 108 条数据批量设置了离职规则！');
-  } else {
-    tableData.value.forEach(row => {
-      if (selectedIds.value.includes(row.id)) {
-        row.autoDelete = autoDel;
-      }
-    });
-    alert('批量设置成功！');
-  }
+    }
+  });
+  alert('批量设置成功！');
   
   showBatchModal.value = false;
   selectedIds.value = [];
-  isGlobalAllSelected.value = false;
 };
 
 // --- 编辑弹窗逻辑 ---
@@ -483,17 +464,16 @@ const backToHome = () => {
 
         <!-- 表格卡片 -->
         <div class="bg-white rounded shadow-sm border border-gray-100 flex flex-col flex-1 min-h-0 overflow-hidden">
+          <!-- 按钮操作区 -->
           <div class="p-4 border-b border-gray-100 shrink-0 flex items-center gap-3">
             <button class="px-4 h-8 bg-[#e54d4d] text-white rounded text-sm hover:bg-red-600 transition-colors font-medium flex items-center gap-1">
               新增
-            </button>
-            <button @click="toggleGlobalAll" class="px-4 h-8 bg-white border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 transition-colors font-medium flex items-center gap-1 relative overflow-hidden group">
-              <span class="relative z-10">一键全选</span>
             </button>
             <button @click="openBatchModal" class="px-4 h-8 bg-white border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 transition-colors font-medium flex items-center gap-1">
               批量离职设置
             </button>
           </div>
+
 
           <div class="flex-1 overflow-auto custom-scrollbar relative">
             <table class="w-full text-center border-collapse whitespace-nowrap text-xs">
@@ -501,7 +481,7 @@ const backToHome = () => {
                 <!-- 第一行表头 -->
                 <tr>
                   <th rowspan="2" class="p-3 border border-gray-200 w-10 text-center">
-                    <input type="checkbox" :checked="isCurrentPageAllSelected || isGlobalAllSelected" @change="toggleCurrentPageAll" class="w-3.5 h-3.5 cursor-pointer accent-[#e54d4d]" />
+                    <input type="checkbox" :checked="isCurrentPageAllSelected" @change="toggleCurrentPageAll" class="w-3.5 h-3.5 cursor-pointer accent-[#e54d4d]" />
                   </th>
                   <th rowspan="2" class="p-3 border border-gray-200 font-bold min-w-[70px]">姓名</th>
                   <th rowspan="2" class="p-3 border border-gray-200 font-bold min-w-[90px]">手机号</th>
@@ -532,7 +512,7 @@ const backToHome = () => {
               <tbody class="text-gray-600">
                 <tr v-for="row in tableData" :key="row.id" class="hover:bg-blue-50/30 transition-colors">
                   <td class="p-3 border border-gray-100 text-center">
-                    <input type="checkbox" :checked="selectedIds.includes(row.id) || isGlobalAllSelected" @change="toggleSingle(row.id)" class="w-3.5 h-3.5 cursor-pointer accent-[#e54d4d]" />
+                    <input type="checkbox" :checked="selectedIds.includes(row.id)" @change="toggleSingle(row.id)" class="w-3.5 h-3.5 cursor-pointer accent-[#e54d4d]" />
                   </td>
                   <td class="p-3 border border-gray-100">{{ row.name }}</td>
                   <td class="p-3 border border-gray-100 whitespace-pre-wrap leading-snug text-[11px]">{{ row.phone }}</td>
@@ -614,7 +594,7 @@ const backToHome = () => {
       </div>
       <div class="p-6">
         <div class="text-sm text-gray-700 mb-4">
-          请确认对选中的【<span class="text-[#e54d4d] font-bold">{{ isGlobalAllSelected ? '108' : selectedIds.length }}</span>】名顾问设置：
+          请确认对选中的【<span class="text-[#e54d4d] font-bold">{{ selectedIds.length }}</span>】名顾问设置：
         </div>
         <div class="space-y-3 pl-2">
           <label class="flex items-center gap-2 cursor-pointer">
