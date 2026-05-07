@@ -6,7 +6,7 @@ import { computed, ref } from 'vue';
 const router = useRouter();
 
 // Sprint Accordion Logic
-const expandedSprint = ref<string | null>('Sprint 6'); // 默认展开第一个
+const expandedSprint = ref<string | null>('Sprint 7'); // 默认展开第一个
 
 const toggleSprint = (sprintName: string) => {
   if (expandedSprint.value === sprintName) {
@@ -233,7 +233,7 @@ const sprints = ref([
         title: '车辆信息标签按VIN码展示',
         module: '客户端',
         progress: 100,
-        status: '设计完成',
+        status: '已发版',
         misId: 'MISMS20260311112047',
         misStatus: '产品设计中',
         version: 'v2.0.1',
@@ -243,25 +243,11 @@ const sprints = ref([
         description: '在移动端客户画像中，支持按VIN码维度聚合展示车辆信息标签'
       },
       {
-        id: 'REQ-SPRINT6-02',
-        title: 'AI智能分析功能',
-        module: '客户端',
-        progress: 80,
-        status: '设计完成',
-        misId: 'MISMS20260310163158',
-        misStatus: '需求实施中',
-        version: 'v1.5.4',
-        isExternalPrototype: false,
-        icon: Sparkles,
-        link: '/features/ai-analysis',
-        description: '基于大模型能力，为经销商提供客户沟通话术建议及画像深度解析'
-      },
-      {
         id: 'REQ-SPRINT6-03',
         title: '会话存档管理',
         module: '自建平台',
         progress: 100,
-        status: '设计完成',
+        status: '已发版',
         misId: 'MISMS20260406090100',
         misStatus: '需求实施中',
         version: 'v1.1.0',
@@ -329,7 +315,22 @@ const sprints = ref([
     status: '规划中',
     statusColor: 'bg-gray-50 text-gray-500 border border-gray-200',
     targetDate: '2026-05-21',
-    requirements: []
+    requirements: [
+      {
+        id: 'REQ-SPRINT8-01',
+        title: 'AI智能分析功能',
+        module: '客户端',
+        progress: 50,
+        status: '开发中',
+        misId: 'MISMS20260310163158',
+        misStatus: '需求实施中',
+        version: 'v1.5.4',
+        isExternalPrototype: false,
+        icon: Sparkles,
+        link: '/features/ai-analysis',
+        description: '基于大模型能力，为经销商提供客户沟通话术建议及画像深度解析'
+      }
+    ]
   }
 ]);
 
