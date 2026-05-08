@@ -802,7 +802,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, inject } from 'vue';
 import { useRouter } from 'vue-router';
-import { ChevronLeft, Eye, Filter, Play, Search, Share2, Star, X, Layers, FolderSearch, FileText, Link, File, BookOpen, Smartphone, Mic, Image, Check, Info, Target, Type } from 'lucide-vue-next';
+import { ChevronLeft, Eye, Filter, Play, Search, Share2, Star, X, Layers, FolderSearch, FileText, Link, File, BookOpen, Smartphone, Mic, Image, Check, Target, Type } from 'lucide-vue-next';
 
 type ContentType = '图片' | '纯文本' | '视频' | '文件' | '链接' | '文章' | '小程序' | '语音' | '海报';
 type SortMode = '最新发布' | '最多浏览' | '最多收藏';
