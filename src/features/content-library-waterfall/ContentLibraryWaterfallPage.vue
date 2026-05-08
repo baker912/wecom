@@ -401,6 +401,19 @@
               <p class="text-[14px] text-white/90 leading-relaxed drop-shadow-sm line-clamp-3">
                 {{ activeItem.description }}
               </p>
+
+              <!-- 是否配置雷达 (视频详情) -->
+              <div class="pt-2 flex flex-col gap-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-[12px] font-bold text-white/70">是否配置雷达:</span>
+                  <span class="text-[12px] font-bold" :class="activeItem.hasRadar ? 'text-green-400' : 'text-white/40'">
+                    {{ activeItem.hasRadar ? '是' : '否' }}
+                  </span>
+                </div>
+                <p v-if="activeItem.hasRadar" class="text-[11px] text-white/50 italic leading-tight">
+                  注：配置雷达后，发送出的素材将被封装成链接形式。
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -442,6 +455,20 @@
               <span class="text-[12px] font-bold">{{ activeItem.type }}</span>
             </div>
           </div>
+
+          <!-- 是否配置雷达 (通用详情) -->
+          <div class="mb-6 px-4 py-3 bg-gray-50 rounded-2xl border border-gray-100">
+            <div class="flex items-center gap-3">
+              <span class="text-[13px] font-bold text-gray-500">是否配置雷达</span>
+              <span class="px-2 py-0.5 rounded-lg text-[12px] font-black" :class="activeItem.hasRadar ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-400'">
+                {{ activeItem.hasRadar ? '是' : '否' }}
+              </span>
+            </div>
+            <p v-if="activeItem.hasRadar" class="mt-2 text-[11px] text-gray-400 leading-relaxed italic">
+              * 发送出去的素材会被封装成链接形式
+            </p>
+          </div>
+
           <h2 class="text-[18px] font-bold text-gray-900 leading-tight mb-4">{{ activeItem.title }}</h2>
           
           <div v-if="activeItem.type === '链接' || activeItem.type === '语音' || activeItem.type === '小程序'" class="space-y-4">
@@ -678,6 +705,7 @@ type ContentItem = {
   description?: string;
   appId?: string;
   path?: string;
+  hasRadar?: boolean;
 };
 
 const router = useRouter();
@@ -890,6 +918,7 @@ const items = ref<ContentItem[]>([
     category: '新车发布',
     publishedAt: '2026-03-30',
     videoUrl: '/assets/videos/audi_promo.mp4',
+    hasRadar: true,
     description: '全新奥迪A5L以动感设计重塑经典。搭载quattro四驱系统与矩阵式LED大灯，为您带来前所未有的驾驶乐趣。点击视频，开启您的进取之旅。'
   },
   {
@@ -909,6 +938,7 @@ const items = ref<ContentItem[]>([
     series: 'Q系列',
     model: 'Q5L',
     category: '车型介绍',
+    hasRadar: true,
     publishedAt: '2026-03-28'
   },
   {
@@ -1169,24 +1199,55 @@ const openDetail = (id: string) => {
   // 根据不同类型更新右侧需求原型说明
   if (updateRequirementLogic && activeItem.value) {
     const type = activeItem.value.type;
+    const radarLogic = activeItem.value.hasRadar 
+      ? '该素材已配置雷达：发送出的素材将被封装成链接形式，支持行为追踪。' 
+      : '该素材未配置雷达。';
+
     if (type === '文章') {
-      updateRequirementLogic(['字段映射：文章类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【文章正文】。']);
+      updateRequirementLogic([
+        '字段映射：文章类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【文章正文】。',
+        radarLogic
+      ]);
     } else if (type === '视频') {
-      updateRequirementLogic(['字段映射：视频类型素材，封面图对应后台上传的【封面图】，标题对应后台配置的【标题】，内容对应后台配置的【描述】。']);
+      updateRequirementLogic([
+        '字段映射：视频类型素材，封面图对应后台上传的【封面图】，标题对应后台配置的【标题】，内容对应后台配置的【描述】。',
+        radarLogic
+      ]);
     } else if (type === '海报') {
-      updateRequirementLogic(['字段映射：海报类型素材，封面图对应后台【上传图片】，标题对应后台【标题】，内容对应后台【描述】。']);
+      updateRequirementLogic([
+        '字段映射：海报类型素材，封面图对应后台【上传图片】，标题对应后台【标题】，内容对应后台【描述】。',
+        radarLogic
+      ]);
     } else if (type === '纯文本') {
-      updateRequirementLogic(['字段映射：纯文本类型素材，标题对应后台【标题】，内容对应后台【文本内容】。']);
+      updateRequirementLogic([
+        '字段映射：纯文本类型素材，标题对应后台【标题】，内容对应后台【文本内容】。',
+        radarLogic
+      ]);
     } else if (type === '图片') {
-      updateRequirementLogic(['字段映射：图片类型素材，封面图对应后台【上传图片】，标题对应后台【标题】，内容对应后台【描述】。']);
+      updateRequirementLogic([
+        '字段映射：图片类型素材，封面图对应后台【上传图片】，标题对应后台【标题】，内容对应后台【描述】。',
+        radarLogic
+      ]);
     } else if (type === '文件') {
-      updateRequirementLogic(['字段映射：文件类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【描述】。']);
+      updateRequirementLogic([
+        '字段映射：文件类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【描述】。',
+        radarLogic
+      ]);
     } else if (type === '语音') {
-      updateRequirementLogic(['字段映射：语音类型素材，标题对应后台配置的【语音标题】，内容对应后台配置的【无】。']);
+      updateRequirementLogic([
+        '字段映射：语音类型素材，标题对应后台配置的【语音标题】，内容对应后台配置的【无】。',
+        radarLogic
+      ]);
     } else if (type === '小程序') {
-      updateRequirementLogic(['字段映射：小程序类型素材，封面图对应后台【卡片图片】，标题对应后台【标题】，内容对应后台【小程序Appid】和【小程序路径】。']);
+      updateRequirementLogic([
+        '字段映射：小程序类型素材，封面图对应后台【卡片图片】，标题对应后台【标题】，内容对应后台【小程序Appid】和【小程序路径】。',
+        radarLogic
+      ]);
     } else if (type === '链接') {
-      updateRequirementLogic(['字段映射：链接类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【描述】，链接地址对应后台【链接地址】。']);
+      updateRequirementLogic([
+        '字段映射：链接类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【描述】，链接地址对应后台【链接地址】。',
+        radarLogic
+      ]);
     } else {
       updateRequirementLogic([]);
     }
