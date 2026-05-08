@@ -1,9 +1,19 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
-import { Users, Calendar, Clock, Image, Smartphone, Monitor, FileText, Sparkles, Database, Play, LayoutGrid, Info, Filter, CheckCircle2, History, ShieldCheck, Target, MessageSquare, ChevronDown, ChevronUp } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { Users, Calendar, Clock, Image, Smartphone, Monitor, FileText, Sparkles, Database, Play, LayoutGrid, Info, Filter, CheckCircle2, History, ShieldCheck, Target, MessageSquare, ChevronDown, ChevronUp, Eye } from 'lucide-vue-next';
+import { computed, ref, onMounted } from 'vue';
 
 const router = useRouter();
+
+const pageVisitCount = ref(0);
+
+onMounted(() => {
+  const storedCount = localStorage.getItem('homepage_visit_count');
+  const currentCount = storedCount ? parseInt(storedCount, 10) : 0;
+  const newCount = currentCount + 1;
+  pageVisitCount.value = newCount;
+  localStorage.setItem('homepage_visit_count', newCount.toString());
+});
 
 // Sprint Accordion Logic
 const expandedSprint = ref<string | null>('Sprint 7'); // 默认展开第一个
@@ -401,6 +411,12 @@ const scrollToSprint = (sprintName: string) => {
             </svg>
           </div>
           <h1 class="text-3xl font-bold text-gray-900 tracking-tight">奥迪企业微信原型方案</h1>
+          <!-- 访问量统计组件 -->
+          <div class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-100 shadow-sm self-center">
+            <Eye :size="14" class="text-blue-500" />
+            <span class="text-[10px] font-black text-blue-600 uppercase tracking-tight">累计访问</span>
+            <span class="text-[13px] font-black text-blue-600 tabular-nums leading-none">{{ pageVisitCount }}</span>
+          </div>
         </div>
         <div class="flex items-center gap-2 pl-1">
           <p class="text-gray-500 text-sm font-medium tracking-wide">展示部分功能原型及进行简单的需求进度跟踪，系统持续优化中。</p>

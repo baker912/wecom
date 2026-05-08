@@ -1,10 +1,658 @@
-<script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import { ChevronLeft, Eye, Filter, Play, Search, Share2, Star, X, Layers, MessageSquare, Download, FolderSearch } from 'lucide-vue-next';
+<template>
+  <!-- 彻底重构：锁定屏幕，严禁任何形式的越界 -->
+  <div class="fixed inset-0 bg-white flex flex-col overflow-hidden select-none touch-none">
+    
+    <!-- 视图切换容器 -->
+    <div class="flex-1 relative overflow-hidden touch-auto">
+      
+      <!-- 视图 A：主列表页 -->
+      <div v-if="!showFilterSheet" class="absolute inset-0 flex flex-col bg-gray-50 animate-fade-in">
+        <!-- 状态栏物理占位：确保没有任何内容能进到状态栏 -->
+        <div class="bg-white shrink-0 h-[env(safe-area-inset-top,44px)] min-h-[44px] w-full z-40"></div>
 
-type ContentType = '图片' | '视频';
-type SortMode = '最新发布' | '热度最高';
+        <!-- 固定头部 -->
+        <header class="bg-white shadow-sm border-b border-gray-100 shrink-0 z-30">
+          <div class="h-12 flex items-center justify-between px-4">
+            <button type="button" class="p-2 -ml-2 text-gray-800 active:opacity-20" @click="backToHome">
+              <ChevronLeft :size="26" />
+            </button>
+            <div class="text-[17px] font-bold text-gray-900">内容库</div>
+            <div class="w-10"></div>
+          </div>
+          
+          <div class="px-4 pb-2.5 flex flex-col gap-2.5">
+            <div class="flex items-center gap-2.5">
+              <div class="flex-1 bg-gray-100 rounded-xl h-10 px-3 flex items-center gap-2">
+                <Search :size="16" class="text-gray-400 shrink-0" />
+                <input 
+                  v-model="keyword" 
+                  type="text" 
+                  placeholder="请搜索内容" 
+                  class="flex-1 bg-transparent outline-none text-[14px] text-gray-800" 
+                />
+                <button v-if="keyword" @click="keyword=''" class="p-1 text-gray-400">
+                  <X :size="14" />
+                </button>
+                <div class="h-3 w-px bg-gray-300 mx-0.5"></div>
+                <button class="text-[14px] font-bold text-red-600 px-1 active:opacity-20">搜索</button>
+              </div>
+              <button 
+                type="button" 
+                class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-gray-600 active:bg-gray-200 shrink-0" 
+                @click="openFilter"
+              >
+                <Filter :size="18" />
+              </button>
+            </div>
+
+            <!-- 排序标签 -->
+            <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+              <div class="inline-flex items-center px-2.5 py-1.5 rounded-lg bg-gray-100 text-[11px] text-gray-500 font-bold shrink-0">
+                排序: {{ sortMode }}
+              </div>
+              <div
+                v-for="chip in appliedChips"
+                :key="chip.key"
+                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 text-[11px] text-red-600 font-bold border border-red-100 shrink-0"
+              >
+                {{ chip.value }}
+                <button v-if="chip.canDelete" type="button" class="ml-0.5 p-0.5" @click="clearApplied(chip.key)">
+                  <X :size="10" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- 列表区：独立滚动 -->
+        <main class="flex-1 overflow-y-auto px-3 py-3 scrolling-touch bg-gray-50">
+          <!-- 骨架屏 -->
+          <div v-if="isLoading" class="columns-2 gap-3">
+            <div v-for="i in 8" :key="i" class="mb-3 break-inside-avoid">
+              <div class="bg-white rounded-2xl p-2 animate-pulse">
+                <div class="w-full h-40 bg-gray-200 rounded-xl mb-3"></div>
+                <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 空态 -->
+          <div v-else-if="filteredItems.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
+            <FolderSearch :size="40" class="text-gray-300 mb-4" />
+            <h3 class="text-gray-800 font-bold">未找到相关素材</h3>
+            <button @click="resetFilter(); applyFilter(); keyword=''; showOnlyFavorites=false" class="mt-4 px-6 py-2 bg-red-500 text-white rounded-full text-sm">清除所有筛选</button>
+          </div>
+
+          <!-- 瀑布流 -->
+          <div v-else class="columns-2 gap-3">
+            <div v-for="item in filteredItems" :key="item.id" class="mb-3 break-inside-avoid">
+              <div class="group bg-white rounded-2xl shadow-sm overflow-hidden active:scale-[0.96] transition-transform" @click="openDetail(item.id)">
+                <!-- 封面图 -->
+                <div class="relative w-full overflow-hidden bg-gray-100 min-h-[100px]">
+                  <template v-if="item.type === '纯文本'">
+                      <!-- 纯文本类型的“文本封面” -->
+                      <div class="aspect-square w-full bg-gradient-to-br from-gray-50 to-gray-100 p-4 flex flex-col justify-center overflow-hidden">
+                        <p class="text-[12px] text-gray-500 leading-relaxed line-clamp-6 italic font-medium">
+                          {{ item.description || item.title }}
+                        </p>
+                        <div class="mt-3 pt-3 border-t border-gray-200/50 flex justify-end">
+                          <FileText :size="14" class="text-gray-300" />
+                        </div>
+                      </div>
+                    </template>
+                    <template v-else-if="item.type === '语音'">
+                      <!-- 语音类型的简洁矢量风格封面 -->
+                      <div class="aspect-square w-full bg-gray-50 flex flex-col items-center justify-center gap-4">
+                        <div class="flex items-center gap-3">
+                          <!-- 语音图片 (图标圆圈) -->
+                          <div class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center">
+                            <Mic :size="20" class="text-red-500" />
+                          </div>
+                          <!-- 声波 (放到右边) -->
+                          <div class="flex items-center gap-1">
+                            <div class="w-1 h-3 bg-red-200 rounded-full animate-pulse"></div>
+                            <div class="w-1 h-5 bg-red-400 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+                            <div class="w-1 h-3 bg-red-200 rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+                          </div>
+                        </div>
+                        <span class="text-[10px] text-gray-400 font-bold tracking-wider">语音文件</span>
+                      </div>
+                    </template>
+                    <img 
+                      v-else
+                    :src="getCoverUrl(item)" 
+                    class="w-full h-auto object-cover transition-transform duration-500 group-active:scale-105"
+                    loading="lazy"
+                  />
+                  <div class="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/40 backdrop-blur-sm text-white text-[10px] flex items-center gap-1">
+                    <component :is="contentTypeIcon(item.type)" :size="10" />
+                  </div>
+                  <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent">
+                    <div class="flex items-center gap-1 text-white text-[10px] font-medium">
+                      <Eye :size="10" /> {{ item.viewCount }}
+                    </div>
+                  </div>
+                </div>
+                <div class="p-2.5">
+                  <h3 class="text-[13px] font-bold text-gray-900 leading-snug line-clamp-2 mb-2">{{ item.title }}</h3>
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5 truncate">
+                      <div class="w-4 h-4 rounded-full bg-red-50 text-red-600 flex items-center justify-center text-[9px] font-bold shrink-0">{{ item.authorTag }}</div>
+                      <span class="text-[10px] text-gray-500 truncate">{{ item.authorName }}</span>
+                    </div>
+                    <div class="flex items-center gap-0.5 text-[10px] text-gray-400 shrink-0">
+                      <Star :size="10" /> {{ item.favCount }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      <!-- 视图 B：全屏筛选页 -->
+      <div v-else class="absolute inset-0 flex flex-col bg-white animate-slide-up">
+        <!-- 状态栏物理占位 -->
+        <div class="bg-white shrink-0 h-[env(safe-area-inset-top,44px)] min-h-[44px] w-full z-40"></div>
+
+        <!-- 固定筛选头部 -->
+        <header class="bg-white border-b border-gray-100 shrink-0 z-30">
+          <div class="h-12 flex items-center justify-between px-4">
+            <button type="button" class="text-[15px] text-gray-500 active:opacity-20 px-2" @click="closeFilter">取消</button>
+            <div class="text-[17px] font-bold text-gray-900">筛选</div>
+            <button type="button" class="text-[15px] text-red-600 font-bold active:opacity-20 px-2" @click="resetFilter">重置</button>
+          </div>
+        </header>
+
+        <!-- 滚动选项区 -->
+        <div class="flex-1 overflow-y-auto px-5 py-6 space-y-7 hide-scrollbar bg-white">
+          <!-- 排序方式 -->
+          <section>
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-[15px] font-bold text-gray-900 flex items-center gap-2">
+                <span class="w-1 h-3.5 bg-red-600 rounded-full"></span>
+                排序方式
+              </h4>
+            </div>
+            <div class="grid grid-cols-3 gap-2.5">
+              <button
+                v-for="opt in sortOptions" :key="opt"
+                @click="sortDraft = opt"
+                :class="['h-10 rounded-xl text-[12px] font-bold transition-all border', sortDraft === opt ? 'bg-red-50 text-red-600 border-red-200' : 'bg-gray-50 text-gray-500 border-transparent active:bg-gray-100']"
+              >
+                {{ opt }}
+              </button>
+            </div>
+          </section>
+
+          <!-- 内容创作者 (已调整至此处) -->
+          <section>
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-[15px] font-bold text-gray-900 flex items-center gap-2">
+                <span class="w-1 h-3.5 bg-red-600 rounded-full"></span>
+                内容创作者
+              </h4>
+            </div>
+            <div class="grid grid-cols-3 gap-2.5">
+              <button
+                v-for="opt in creatorOptions" :key="opt"
+                @click="handleFilterClick('内容创作者', opt)"
+                :class="['h-10 rounded-xl text-[12px] font-bold transition-all border', filterDraft.creator === opt ? 'bg-red-50 text-red-600 border-red-200' : 'bg-gray-50 text-gray-500 border-transparent active:bg-gray-100']"
+              >
+                {{ opt }}
+              </button>
+            </div>
+          </section>
+
+          <!-- 所属业务 (仅在厂家素材时展示) -->
+          <section v-if="filterDraft.creator === '厂家素材'">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-[15px] font-bold text-gray-900 flex items-center gap-2">
+                <span class="w-1 h-3.5 bg-red-600 rounded-full"></span>
+                所属业务
+              </h4>
+            </div>
+            <div class="grid grid-cols-3 gap-2.5">
+              <button
+                v-for="opt in businessOptions" :key="opt"
+                @click="handleFilterClick('所属业务', opt)"
+                :class="['h-10 rounded-xl text-[12px] font-bold transition-all border', filterDraft.business === opt ? 'bg-red-50 text-red-600 border-red-200' : 'bg-gray-50 text-gray-500 border-transparent active:bg-gray-100']"
+              >
+                {{ opt }}
+              </button>
+            </div>
+          </section>
+
+          <!-- 所属场景 (仅在厂家素材时展示) -->
+          <section v-if="filterDraft.creator === '厂家素材'">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-[15px] font-bold text-gray-900 flex items-center gap-2">
+                <span class="w-1 h-3.5 bg-red-600 rounded-full"></span>
+                所属场景
+              </h4>
+            </div>
+            <div class="grid grid-cols-3 gap-2.5">
+              <button
+                v-for="opt in scenarioMapping[filterDraft.business]" :key="opt"
+                @click="handleFilterClick('所属场景', opt)"
+                :class="['h-10 rounded-xl text-[12px] font-bold transition-all border', filterDraft.scenario === opt ? 'bg-red-50 text-red-600 border-red-200' : 'bg-gray-50 text-gray-500 border-transparent active:bg-gray-100']"
+              >
+                {{ opt }}
+              </button>
+            </div>
+          </section>
+
+          <!-- 品质车型特有：所属车系 (仅在厂家素材且业务为品质车型时展示) -->
+          <section v-if="filterDraft.creator === '厂家素材' && filterDraft.business === '品质车型'">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-[15px] font-bold text-gray-900 flex items-center gap-2">
+                <span class="w-1 h-3.5 bg-red-600 rounded-full"></span>
+                所属车系
+              </h4>
+            </div>
+            <div class="grid grid-cols-3 gap-2.5">
+              <button
+                v-for="opt in seriesOptions" :key="opt"
+                @click="handleFilterClick('所属车系', opt)"
+                :class="['h-10 rounded-xl text-[12px] font-bold transition-all border', filterDraft.series === opt ? 'bg-red-50 text-red-600 border-red-200' : 'bg-gray-50 text-gray-500 border-transparent active:bg-gray-100']"
+              >
+                {{ opt }}
+              </button>
+            </div>
+          </section>
+
+          <!-- 品质车型特有：所属车型 (仅在厂家素材且业务为品质车型时展示) -->
+          <section v-if="filterDraft.creator === '厂家素材' && filterDraft.business === '品质车型'">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-[15px] font-bold text-gray-900 flex items-center gap-2">
+                <span class="w-1 h-3.5 bg-red-600 rounded-full"></span>
+                所属车型
+              </h4>
+            </div>
+            <div class="grid grid-cols-3 gap-2.5">
+              <button
+                v-for="opt in modelMapping[filterDraft.series]" :key="opt"
+                @click="handleFilterClick('所属车型', opt)"
+                :class="['h-10 rounded-xl text-[12px] font-bold transition-all border', filterDraft.model === opt ? 'bg-red-50 text-red-600 border-red-200' : 'bg-gray-50 text-gray-500 border-transparent active:bg-gray-100']"
+              >
+                {{ opt }}
+              </button>
+            </div>
+          </section>
+
+          <!-- 内容类型 -->
+          <section>
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-[15px] font-bold text-gray-900 flex items-center gap-2">
+                <span class="w-1 h-3.5 bg-red-600 rounded-full"></span>
+                内容类型
+              </h4>
+            </div>
+            <div class="grid grid-cols-3 gap-2.5">
+              <button
+                v-for="opt in contentTypeOptions" :key="opt"
+                @click="handleFilterClick('内容类型', opt)"
+                :class="['h-10 rounded-xl text-[12px] font-bold transition-all border', filterDraft.contentType === opt ? 'bg-red-50 text-red-600 border-red-200' : 'bg-gray-50 text-gray-500 border-transparent active:bg-gray-100']"
+              >
+                {{ opt }}
+              </button>
+            </div>
+          </section>
+        </div>
+
+        <!-- 固定底部按钮 -->
+        <footer class="p-4 border-t border-gray-100 bg-white shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom,20px))]">
+          <button class="w-full h-12 bg-red-600 text-white text-[16px] font-bold rounded-xl active:scale-[0.98] transition-transform shadow-lg shadow-red-100" @click="applyFilter">
+            查看结果
+          </button>
+        </footer>
+      </div>
+
+    </div>
+
+    <!-- 详情模态框 -->
+    <div v-if="showDetail && activeItem" class="fixed inset-0 z-[110] flex flex-col bg-white animate-fade-in overflow-hidden">
+      <!-- 视频类型：抖音风格展示 -->
+      <template v-if="activeItem.type === '视频'">
+        <div class="relative w-full h-full bg-black flex flex-col overflow-hidden">
+          <!-- 状态栏物理占位 (白色) -->
+          <div class="shrink-0 h-[env(safe-area-inset-top,44px)] min-h-[44px] w-full z-40 bg-white"></div>
+
+          <!-- 顶部操作栏 - 白色背景且调整文字颜色 -->
+          <header class="relative h-12 flex items-center px-4 z-50 bg-white border-b border-gray-50">
+            <button type="button" class="p-2 -ml-2 text-gray-800 active:opacity-20" @click="closeDetail">
+              <ChevronLeft :size="30" />
+            </button>
+            <div class="flex-1 text-center font-bold text-gray-900">视频详情</div>
+            <div class="w-10"></div>
+          </header>
+
+          <!-- 视频播放区域 -->
+          <div class="absolute inset-0 flex items-center justify-center bg-black" @click="toggleVideoPlay">
+            <video 
+              ref="videoPlayer"
+              class="w-full h-full object-contain" 
+              :src="activeItem.videoUrl"
+              :poster="activeItem.coverUrl" 
+              playsinline
+              loop
+              preload="auto"
+              @play="isVideoPlaying = true"
+              @pause="isVideoPlaying = false"
+              @error="handleVideoError"
+              @waiting="isVideoLoading = true"
+              @playing="isVideoLoading = false"
+              @canplay="isVideoLoading = false"
+            ></video>
+            
+            <!-- 中间播放按钮 / 加载状态 -->
+            <div v-if="!isVideoPlaying || isVideoLoading" class="absolute inset-0 flex items-center justify-center bg-black/20 transition-opacity pointer-events-none">
+              <!-- 加载中 -->
+              <div v-if="isVideoLoading" class="flex flex-col items-center justify-center gap-3">
+                <div class="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+                <span class="text-white text-[12px] font-medium drop-shadow-md">加载中...</span>
+              </div>
+              <!-- 播放按钮 -->
+              <div v-else class="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                <Play :size="32" class="text-white ml-1.5" fill="currentColor" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 右侧交互按钮 (抖音风格：竖状排列) - 增加整体背景色 -->
+          <div class="absolute right-3 bottom-6 flex flex-col items-center gap-6 z-[120] bg-white/10 backdrop-blur-xl px-2.5 py-6 rounded-[28px] border border-white/20 shadow-2xl">
+            <!-- 浏览量 -->
+            <div class="flex flex-col items-center gap-0.5 text-white pointer-events-none">
+              <Eye :size="22" />
+              <span class="text-[12px] font-bold leading-none mt-1">{{ activeItem.viewCount }}</span>
+            </div>
+            <!-- 收藏 -->
+            <button class="flex flex-col items-center gap-0.5 transition-all active:scale-90" :class="activeItem.isFavorite ? 'text-red-500' : 'text-white'" @click="handleFavoriteDetail">
+              <Star :size="22" :fill="activeItem.isFavorite ? 'currentColor' : 'none'" />
+              <span class="text-[12px] font-bold leading-none mt-1">{{ activeItem.favCount }}</span>
+            </button>
+            <!-- 分享 -->
+            <button class="flex flex-col items-center gap-0.5 text-white active:opacity-20 transition-all active:scale-90" @click="showShareSheet = true">
+              <Share2 :size="22" />
+              <span class="text-[12px] font-bold leading-none mt-1">{{ activeItem.shareCount }}</span>
+            </button>
+          </div>
+
+          <!-- 底部内容遮罩 (抖音风格) - 宽度占满 -->
+          <div class="absolute bottom-0 left-0 right-0 p-5 pb-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none">
+            <div class="space-y-2 max-w-full pr-14 pointer-events-auto">
+              <!-- 发布者信息 -->
+              <div class="flex items-center gap-2.5 mb-1">
+                <div class="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center font-bold border-2 border-white shadow-lg shrink-0">{{ activeItem.authorTag }}</div>
+                <div class="flex flex-col">
+                  <span class="text-[16px] font-bold text-white drop-shadow-md">{{ activeItem.authorName }}</span>
+                  <span class="text-[11px] text-white/60 font-medium">{{ activeItem.publishedAt }}</span>
+                </div>
+              </div>
+              
+              <!-- 标题 -->
+              <h2 class="text-[18px] font-bold text-white leading-snug drop-shadow-md">
+                {{ activeItem.title }}
+              </h2>
+              
+              <!-- 描述 -->
+              <p class="text-[14px] text-white/90 leading-relaxed drop-shadow-sm line-clamp-3">
+                {{ activeItem.description }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 普通类型展示 -->
+      <template v-else>
+        <!-- 状态栏物理占位 -->
+        <div class="bg-white shrink-0 h-[env(safe-area-inset-top,44px)] min-h-[44px] w-full z-40"></div>
+
+        <!-- 固定详情头部 -->
+        <header class="bg-white border-b border-gray-50 shrink-0">
+          <div class="h-12 flex items-center px-4">
+            <button type="button" class="p-2 -ml-2 text-gray-800 active:opacity-20" @click="closeDetail">
+              <ChevronLeft :size="26" />
+            </button>
+            <div class="flex-1 text-center font-bold text-gray-900 truncate px-4">内容详情</div>
+            <div class="w-10"></div>
+          </div>
+        </header>
+
+        <!-- 详情滚动区 -->
+         <div class="flex-1 overflow-y-auto hide-scrollbar bg-white pb-32">
+           <!-- 媒体展示区 (仅针对非纯文本、非语音类型展示) -->
+           <div v-if="activeItem.type !== '纯文本' && activeItem.type !== '语音'" class="w-full bg-black flex items-center justify-center min-h-[40vh]">
+             <img :src="getCoverUrl(activeItem)" class="w-full h-auto max-h-[75vh] object-contain" />
+           </div>
+ 
+           <div class="px-5 py-6">
+             <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center font-bold border border-red-100">{{ activeItem.authorTag }}</div>
+            <div class="flex-1 min-w-0">
+              <div class="text-[15px] font-bold text-gray-900 truncate">{{ activeItem.authorName }}</div>
+              <div class="text-[12px] text-gray-400 mt-0.5">{{ activeItem.publishedAt }}</div>
+            </div>
+            <!-- 内容类型标签 (Icon + 文字) - 右对齐且放大 -->
+            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 text-gray-600 shrink-0 border border-gray-50">
+              <component :is="contentTypeIcon(activeItem.type)" :size="14" />
+              <span class="text-[12px] font-bold">{{ activeItem.type }}</span>
+            </div>
+          </div>
+          <h2 class="text-[18px] font-bold text-gray-900 leading-tight mb-4">{{ activeItem.title }}</h2>
+          
+          <div v-if="activeItem.type === '链接' || activeItem.type === '语音' || activeItem.type === '小程序'" class="space-y-4">
+            <p v-if="activeItem.description" class="text-[14px] text-gray-600 leading-relaxed mb-4 whitespace-pre-wrap">{{ activeItem.description }}</p>
+            
+            <!-- 语音播放器 -->
+            <div v-if="activeItem.type === '语音'" class="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center shrink-0">
+                  <Mic :size="24" class="text-red-500" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[14px] font-bold text-gray-900 truncate mb-1.5">奥迪A5L产品介绍.mp3</div>
+                  <div class="flex items-center gap-2">
+                    <div class="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
+                      <div class="w-1/3 h-full bg-red-600 rounded-full"></div>
+                    </div>
+                    <span class="text-[10px] text-gray-400 font-mono">00:12 / 00:45</span>
+                  </div>
+                </div>
+                <button 
+                  class="w-10 h-10 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center active:scale-90 transition-transform shrink-0"
+                  @click="triggerToast('正在播放语音素材...')"
+                >
+                  <Play :size="18" class="text-red-600 ml-0.5" fill="currentColor" />
+                </button>
+              </div>
+            </div>
+
+            <!-- 链接区块 -->
+            <div v-if="activeItem.type === '链接'" class="bg-gray-50 rounded-2xl p-4 border border-gray-100 active:bg-gray-100 transition-colors" @click="triggerToast('正在打开链接...')">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center shrink-0">
+                  <Link :size="24" class="text-blue-500" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[14px] font-bold text-gray-900 truncate mb-1">链接地址</div>
+                  <div class="text-[11px] text-gray-400 truncate">{{ activeItem.externalUrl || 'https://www.audi.cn' }}</div>
+                </div>
+                <button class="px-4 py-1.5 bg-white border border-gray-200 text-gray-600 text-[11px] font-bold rounded-full shadow-sm shrink-0">
+                  访问
+                </button>
+              </div>
+            </div>
+
+            <!-- 小程序区块 -->
+            <div v-if="activeItem.type === '小程序'" class="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+              <div class="space-y-4">
+                <div class="flex flex-col gap-1">
+                  <span class="text-[12px] text-gray-400">小程序 AppID</span>
+                  <span class="text-[14px] font-mono font-bold text-gray-900 break-all">{{ activeItem.appId || 'wx1234567890abcdef' }}</span>
+                </div>
+                <div class="flex flex-col gap-1">
+                  <span class="text-[12px] text-gray-400">页面路径</span>
+                  <span class="text-[14px] font-mono font-bold text-gray-900 break-all">{{ activeItem.path || '/pages/index/main' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 小程序提示文案单独盒子 -->
+             <div v-if="activeItem.type === '小程序'" class="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+               <p class="text-[11px] text-black leading-relaxed">
+                 提示：若想了解分享后的卡片样式及小程序跳转是否正常，建议先充分测试确认无误后，再分享给相应的用户。
+               </p>
+             </div>
+          </div>
+
+          <p v-if="activeItem.type !== '小程序' && activeItem.type !== '链接' && activeItem.type !== '语音'" class="text-[14px] text-gray-600 leading-relaxed mb-6 whitespace-pre-wrap">{{ activeItem.description || `全新奥迪${activeItem.series}为您带来极致体验。` }}</p>
+
+          <!-- 文件类型特有：附件展示 -->
+          <div v-if="activeItem.type === '文件'" class="mt-4">
+            <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 active:bg-gray-100 transition-colors" @click="triggerToast('正在打开预览...')">
+              <div class="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center">
+                <File :size="24" class="text-blue-500" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-[14px] font-bold text-gray-900 truncate">{{ activeItem.fileName || '未命名文件.pdf' }}</div>
+                <div class="text-[11px] text-gray-400 mt-0.5">点击即可预览</div>
+              </div>
+              <button class="px-4 py-1.5 bg-white border border-gray-200 text-gray-600 text-[11px] font-bold rounded-full shadow-sm">
+                预览
+              </button>
+            </div>
+          </div>
+          </div>
+        </div>
+
+        <!-- 固定交互底栏 (按照截图调整为悬浮胶囊样式) -->
+        <div class="fixed bottom-10 right-6 bg-white rounded-[32px] shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-gray-50 px-7 py-2.5 flex items-center gap-9 z-[120] animate-fade-in">
+          <!-- 浏览量 -->
+          <div class="flex flex-col items-center gap-0.5 text-gray-400">
+            <Eye :size="20" />
+            <span class="text-[11px] font-bold">{{ activeItem.viewCount }}</span>
+          </div>
+          <!-- 收藏 -->
+          <button class="flex flex-col items-center gap-0.5 transition-colors active:opacity-50" :class="activeItem.isFavorite ? 'text-red-500' : 'text-gray-400'" @click="handleFavoriteDetail">
+            <Star :size="20" :fill="activeItem.isFavorite ? 'currentColor' : 'none'" />
+            <span class="text-[11px] font-bold">{{ activeItem.favCount }}</span>
+          </button>
+          <!-- 分享 -->
+          <button class="flex flex-col items-center gap-0.5 text-gray-400 active:opacity-20" @click="showShareSheet = true">
+            <Share2 :size="20" />
+            <span class="text-[11px] font-bold">{{ activeItem.shareCount }}</span>
+          </button>
+        </div>
+      </template>
+    </div>
+
+    <!-- 悬浮收藏按钮 -->
+    <button 
+      type="button"
+      @click="toggleFavorites"
+      :class="[
+        'fixed right-3 bottom-8 w-12 h-12 rounded-full shadow-2xl flex items-center justify-center transition-all active:scale-90 z-[100]',
+        showOnlyFavorites ? 'bg-red-600 text-white scale-110' : 'bg-white text-gray-400 border border-gray-100'
+      ]"
+    >
+      <Star :size="20" :fill="showOnlyFavorites ? 'currentColor' : 'none'" />
+    </button>
+
+    <!-- Toast 提示 -->
+    <div v-if="showToast" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[200] bg-black/80 text-white px-6 py-3 rounded-full text-[14px] font-bold animate-fade-in shadow-xl">
+      {{ toastMessage }}
+    </div>
+
+    <!-- 分享面板 -->
+    <div v-if="showShareSheet" class="fixed inset-0 z-[150] flex items-end animate-fade-in">
+      <div class="absolute inset-0 bg-black/40" @click="showShareSheet = false"></div>
+      <div class="relative w-full bg-white rounded-t-[32px] h-[75vh] flex flex-col animate-slide-up overflow-hidden">
+        <div class="shrink-0 w-12 h-1.5 bg-gray-200 rounded-full mx-auto my-4"></div>
+        
+        <div class="px-6 flex items-center justify-between mb-4">
+          <h3 class="text-[18px] font-bold text-gray-900">分享素材</h3>
+          <button @click="showShareSheet = false" class="text-gray-400 p-1"><X :size="20" /></button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-6 pb-24">
+          <!-- 第一部分：当前用户 -->
+          <div class="mb-8">
+            <h4 class="text-[13px] text-gray-400 font-bold mb-4">分享给当前用户</h4>
+            <div 
+              class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl active:bg-gray-100 transition-colors"
+              @click="handleShareConfirm"
+            >
+              <img :src="currentUser.avatar" class="w-12 h-12 rounded-full border-2 border-white shadow-sm" />
+              <div class="flex-1">
+                <div class="text-[15px] font-bold text-gray-900">{{ currentUser.name }}</div>
+                <div class="text-[12px] text-gray-400 mt-0.5">微信好友</div>
+              </div>
+              <div class="px-4 py-1.5 bg-red-600 text-white text-[12px] font-bold rounded-full">发送</div>
+            </div>
+          </div>
+
+          <!-- 第二部分：其它用户清单 -->
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-[13px] text-gray-400 font-bold">分享给其它用户</h4>
+              <button @click="toggleSelectAll" class="text-[13px] text-red-600 font-bold active:opacity-50">
+                {{ isAllSelected ? '取消全选' : '一键全选' }}
+              </button>
+            </div>
+
+            <div class="space-y-3">
+              <div 
+                v-for="cust in otherCustomers" 
+                :key="cust.id"
+                class="flex items-center gap-4 p-4 rounded-2xl border transition-all"
+                :class="selectedCustomerIds.has(cust.id) ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'"
+                @click="toggleCustomerSelection(cust.id)"
+              >
+                <div 
+                  class="w-5 h-5 rounded-full border flex items-center justify-center transition-all"
+                  :class="selectedCustomerIds.has(cust.id) ? 'bg-red-600 border-red-600' : 'border-gray-300'"
+                >
+                  <Check v-if="selectedCustomerIds.has(cust.id)" :size="12" class="text-white" />
+                </div>
+                <img :src="cust.avatar" class="w-10 h-10 rounded-full" />
+                <div class="flex-1 text-[15px] font-bold text-gray-800">{{ cust.name }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 固定底部操作 -->
+        <div class="absolute bottom-0 left-0 right-0 p-6 bg-white/95 backdrop-blur-lg border-t border-gray-100 flex items-center justify-between">
+          <div class="flex flex-col">
+            <span class="text-[12px] text-gray-400">已选用户</span>
+            <span class="text-[15px] font-bold text-gray-900">
+              <span class="text-red-600">{{ selectedCustomerIds.size }}</span> / {{ otherCustomers.length }}
+            </span>
+          </div>
+          <button 
+            class="px-8 h-12 rounded-xl font-bold text-[15px] transition-all"
+            :class="selectedCustomerIds.size > 0 ? 'bg-red-600 text-white shadow-lg shadow-red-100 active:scale-[0.98]' : 'bg-gray-100 text-gray-300 pointer-events-none'"
+            @click="handleShareConfirm"
+          >
+            确认分享
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed, ref, watch, inject, nextTick, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { ChevronLeft, ChevronDown, ChevronUp, Eye, Filter, Play, Search, Share2, Star, X, Layers, MessageSquare, Download, FolderSearch, FileText, Link, File, BookOpen, Smartphone, Mic, Image, Check } from 'lucide-vue-next';
+
+type ContentType = '图片' | '纯文本' | '视频' | '文件' | '链接' | '文章' | '小程序' | '语音' | '海报';
+type SortMode = '最新发布' | '最多浏览' | '最多收藏';
 
 type ContentItem = {
   id: string;
@@ -14,16 +662,28 @@ type ContentItem = {
   assetCount: number;
   viewCount: number;
   favCount: number;
+  shareCount: number;
   authorName: string;
   authorTag: string;
+  business: string;
+  scenario: string;
   series: string;
+  model: string;
   category: string;
   publishedAt: string;
+  isFavorite?: boolean;
   videoUrl?: string;
+  fileName?: string;
+  externalUrl?: string;
   description?: string;
+  appId?: string;
+  path?: string;
 };
 
 const router = useRouter();
+
+// 注入更新右侧说明面板的方法
+const updateRequirementLogic = inject<(logic: string[]) => void>('updateRequirementLogic');
 
 const keyword = ref('');
 const sortMode = ref<SortMode>('最新发布');
@@ -32,139 +692,360 @@ const showFilterSheet = ref(false);
 const showDetail = ref(false);
 const activeItemId = ref<string | null>(null);
 const isLoading = ref(false);
+const showOnlyFavorites = ref(false);
+const toastMessage = ref('');
+const showToast = ref(false);
+const showShareSheet = ref(false);
+const isVideoPlaying = ref(false);
+const isVideoLoading = ref(false);
+const videoPlayer = ref<HTMLVideoElement | null>(null);
+
+const handleVideoError = (e: any) => {
+  console.error('Video load failed:', e);
+  isVideoLoading.value = false;
+  triggerToast('视频加载失败，请检查网络或重试');
+};
+
+const toggleVideoPlay = async (e?: Event) => {
+  if (e) e.stopPropagation();
+  if (!videoPlayer.value) return;
+  
+  try {
+    if (videoPlayer.value.paused) {
+      isVideoLoading.value = true;
+      videoPlayer.value.muted = false;
+      
+      await videoPlayer.value.play();
+      isVideoPlaying.value = true;
+      isVideoLoading.value = false;
+    } else {
+      videoPlayer.value.pause();
+      isVideoPlaying.value = false;
+    }
+  } catch (err) {
+    isVideoLoading.value = false;
+    console.error('Video playback failed:', err);
+    
+    if (err instanceof Error && err.name === 'NotAllowedError') {
+      try {
+        videoPlayer.value.muted = true;
+        await videoPlayer.value.play();
+        isVideoPlaying.value = true;
+        triggerToast('已为您静音播放，点击可开启声音');
+      } catch (retryErr) {
+        triggerToast('播放失败，请刷新页面重试');
+      }
+    } else {
+      triggerToast('视频加载失败，请重试');
+    }
+  }
+};
+
+interface Customer {
+  id: string;
+  name: string;
+  avatar: string;
+}
+
+const currentUser: Customer = {
+  id: 'cur-001',
+  name: '张三 (当前用户)',
+  avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&h=100&q=80'
+};
+
+const otherCustomers = ref<Customer[]>([
+  { id: 'c-001', name: '李四', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&h=100&q=80' },
+  { id: 'c-002', name: '王五', avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=100&h=100&q=80' },
+  { id: 'c-003', name: '赵六', avatar: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?auto=format&fit=crop&w=100&h=100&q=80' },
+  { id: 'c-004', name: '钱七', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&h=100&q=80' },
+  { id: 'c-005', name: '孙八', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=100&h=100&q=80' },
+  { id: 'c-006', name: '周九', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=100&h=100&q=80' },
+]);
+
+const selectedCustomerIds = ref<Set<string>>(new Set());
+
+const isAllSelected = computed(() => {
+  return otherCustomers.value.length > 0 && selectedCustomerIds.value.size === otherCustomers.value.length;
+});
+
+const toggleSelectAll = () => {
+  if (isAllSelected.value) {
+    selectedCustomerIds.value.clear();
+  } else {
+    otherCustomers.value.forEach(c => selectedCustomerIds.value.add(c.id));
+  }
+};
+
+const toggleCustomerSelection = (id: string) => {
+  if (selectedCustomerIds.value.has(id)) {
+    selectedCustomerIds.value.delete(id);
+  } else {
+    selectedCustomerIds.value.add(id);
+  }
+};
+
+// 素材类型映射逻辑走查表
+/**
+| 素材类型 | 标题 | 封面图 | 内容 | 其他文件/信息 |
+| :--- | :---: | :---: | :---: | :--- |
+| 文章 | 有 | 有 | 有 (正文) | - |
+| 视频 | 有 | 有 | 有 (描述) | 视频文件 (本地高速) |
+| 海报 | 有 | 有 | 有 (描述) | - |
+| 纯文本 | 有 | 无 (矢量图) | 有 (文本) | - |
+| 图片 | 有 | 有 | 有 (描述) | - |
+| 文件 | 有 | 有 | 有 (描述) | 文件附件 (PDF/DOC) |
+| 语音 | 有 | 无 (矢量图) | 有 (转文字) | 语音文件 (MP3) |
+| 小程序 | 有 | 有 | 有 (描述) | AppID, 页面路径 |
+| 链接 | 有 | 有 | 有 (描述) | 链接地址 (URL) |
+*/
+
+// 素材类型字段映射注释说明
+const typeAnnotations: Record<ContentType, Record<string, string>> = {
+  '文章': { '标题': '后台配置的【标题】', '内容': '后台配置的【文章正文】' },
+  '图片': { '封面图': '后台上传的【上传图片】', '标题': '后台配置的【标题】', '内容': '后台配置的【描述】' },
+  '纯文本': { '标题': '后台配置的【标题】', '内容': '后台配置的【文本内容】' },
+    '视频': { '标题': '后台配置的【标题】', '内容': '后台配置的【视频描述】' },
+    '文件': { '标题': '后台配置的【标题】', '内容': '后台配置的【描述】' },
+    '链接': { '标题': '后台配置的【标题】', '内容': '后台配置的【描述】', '链接地址': '后台配置的【链接地址】' },
+    '小程序': { '标题': '后台配置的【标题】', '内容': '后台配置的【小程序Appid】和【小程序路径】' },
+    '语音': { '标题': '后台配置的【语音标题】', '内容': '无' },
+    '海报': { '标题': '后台配置的【海报主题】', '内容': '后台配置的【海报营销文案】' }
+  };
 
 const filterApplied = ref({
+  business: '全部',
+  scenario: '全部',
   series: '全部',
-  creator: '全部',
-  contentType: '全部' as '全部' | ContentType,
-  publishTime: '全部'
+  model: '全部',
+  creator: '厂家素材',
+  contentType: '全部' as '全部' | ContentType
 });
 
 const filterDraft = ref({ ...filterApplied.value });
 
-const seriesOptions = ['全部', 'A4L', 'A5L', 'A6L', 'Q3', 'Q5L', 'Q7', 'e-tron'];
-const creatorOptions = ['全部', '奥迪官方', '销售助手', '经销商运营'];
-const contentTypeOptions: Array<'全部' | ContentType> = ['全部', '图片', '视频'];
-const publishTimeOptions = ['全部', '近7天', '近30天', '近90天'];
-const sortOptions: SortMode[] = ['最新发布', '热度最高'];
+// 选项配置
+const businessOptions = ['全部', '品质车型', '品牌种草', '售后服务'];
+const sortOptions: SortMode[] = ['最新发布', '最多浏览', '最多收藏'];
+const creatorOptions = ['厂家素材', '经销商素材'];
+const contentTypeOptions: Array<'全部' | ContentType> = ['全部', '图片', '纯文本', '视频', '文件', '链接', '文章', '小程序', '语音', '海报'];
+const scenarioMapping: Record<string, string[]> = {
+  '全部': ['全部'],
+  '品质车型': ['全部', '车型参数', '外观', '内饰', '核心卖点', '友商对比', '营销海报', '购车权益'],
+  '品牌种草': ['全部', '品牌历史', '赛场荣耀', '可靠品质', '灯厂秘籍', 'quattro四驱', '全维安全', '智能科技', '权益政策'],
+  '售后服务': ['全部', '服务优势', '用户指南', '用户关爱', '服务承诺2.0', '服务营销']
+};
+const seriesOptions = ['全部', 'A系列', 'Q系列', '纯电', '旅行车', '高性能'];
+const modelMapping: Record<string, string[]> = {
+  '全部': ['全部', 'A5L', 'A6L', 'A4L', 'A8L', 'A3', 'A5', 'A7 Sportback', '全新A6L', 'Q3', 'Q5L', 'Q7', 'Q8', 'e-tron GT', 'Q4 e-tron', 'Q5 e-tron', 'A4 Avant', 'A6 Avant', 'RS 4', 'RS 6', 'RS 7', 'R8'],
+  'A系列': ['全部', 'A3', 'A4L', 'A5L', 'A6L', 'A7 Sportback', 'A8L', '全新A6L'],
+  'Q系列': ['全部', 'Q2L', 'Q3', 'Q3 Sportback', 'Q5L', 'Q5L Sportback', 'Q7', 'Q8'],
+  '纯电': ['全部', 'e-tron', 'e-tron GT', 'Q4 e-tron', 'Q5 e-tron'],
+  '旅行车': ['全部', 'A4 Avant', 'A4 allroad', 'A6 Avant', 'A6 allroad'],
+  '高性能': ['全部', 'S4', 'S5', 'S6', 'S7', 'S8', 'RS 4', 'RS 5', 'RS 6', 'RS 7', 'RS Q8', 'R8']
+};
 
 const items = ref<ContentItem[]>([
   {
     id: 'CL-001',
-    title: '奥迪A5L cloudbase测试',
-    coverUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80',
+    title: '奥迪A5L 车型参数配置表',
+    coverUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=60',
     type: '图片',
     assetCount: 1,
     viewCount: 41,
     favCount: 1,
-    authorName: '奥迪官方',
-    authorTag: '奥',
-    series: 'A5L',
+    shareCount: 0,
+    isFavorite: true,
+    authorName: '厂家素材',
+    authorTag: '厂',
+    business: '品质车型',
+    scenario: '车型参数',
+    series: 'A系列',
+    model: 'A5L',
     category: '新车上市',
-    publishedAt: '2026-04-01',
-    description: '全新奥迪A5L带来更具运动感的外观与更智能的驾驶体验。建议结合客户画像与沟通场景，选择合适的内容触达方式，提高到店与试驾转化。'
+    publishedAt: '2026-04-01'
   },
   {
     id: 'CL-002',
-    title: '奥迪A5L 静态品鉴实拍',
-    coverUrl: 'https://images.unsplash.com/photo-1525609004556-c46c7d6cf023?auto=format&fit=crop&w=1200&q=80',
-    type: '图片',
+    title: '品牌历史：奥迪百年进取之路',
+    coverUrl: 'https://images.unsplash.com/photo-1525609004556-c46c7d6cf023?auto=format&fit=crop&w=800&q=60',
+    type: '文章',
     assetCount: 3,
     viewCount: 17,
     favCount: 0,
-    authorName: '奥迪官方',
-    authorTag: '奥',
-    series: 'A5L',
-    category: '车型介绍',
+    shareCount: 0,
+    isFavorite: false,
+    authorName: '厂家素材',
+    authorTag: '厂',
+    business: '品牌种草',
+    scenario: '品牌历史',
+    series: '全部',
+    model: '全部',
+    category: '品牌文化',
     publishedAt: '2026-04-02',
-    description: '内饰空间及科技配置静态体验，展现越级豪华。'
+    description: '奥迪的品牌历史可以追溯到19世纪末。从奥古斯特·霍希创立品牌，到四环标志的诞生，奥迪始终秉承“突破科技，启迪未来”的核心理念。在百年的发展历程中，奥迪不仅在赛车场上创造了无数辉煌，更在量产车领域不断推陈出新，将豪华、动力与前瞻科技完美结合。今天，奥迪正全面向电动化转型，开启下一个百年的辉煌篇章。我们将持续为您带来最优质的驾驶体验与服务。'
   },
   {
     id: 'CL-003',
-    title: '一汽奥迪A5L 乾崑智驾®版正式上市',
-    coverUrl: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1200&q=80',
+    title: '全新奥迪A5L：进取魅力，触手可及',
+    coverUrl: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=800&q=60',
     type: '视频',
     assetCount: 1,
-    viewCount: 68,
-    favCount: 2,
-    authorName: '奥迪官方',
-    authorTag: '奥',
-    series: 'A5L',
-    category: '新车上市',
+    viewCount: 2580,
+    favCount: 124,
+    shareCount: 45,
+    isFavorite: true,
+    authorName: '厂家素材',
+    authorTag: '厂',
+    business: '品质车型',
+    scenario: '车型介绍',
+    series: 'A系列',
+    model: 'A5L',
+    category: '新车发布',
     publishedAt: '2026-03-30',
-    videoUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-    description: '全面搭载华为乾崑智驾系统，开启智能出行新篇章。'
+    videoUrl: '/assets/videos/audi_promo.mp4',
+    description: '全新奥迪A5L以动感设计重塑经典。搭载quattro四驱系统与矩阵式LED大灯，为您带来前所未有的驾驶乐趣。点击视频，开启您的进取之旅。'
   },
   {
     id: 'CL-004',
-    title: '全新奥迪A6L爆料来了！直接推家里？',
-    coverUrl: 'https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=1200&q=80',
-    type: '图片',
+    title: '奥迪Q5L 核心卖点解析',
+    coverUrl: 'https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=800&q=60',
+    type: '海报',
     assetCount: 1,
     viewCount: 150,
-    favCount: 0,
-    authorName: '奥迪官方',
-    authorTag: '奥',
-    series: 'A6L',
+    favCount: 5,
+    shareCount: 0,
+    isFavorite: false,
+    authorName: '厂家素材',
+    authorTag: '厂',
+    business: '品质车型',
+    scenario: '核心卖点',
+    series: 'Q系列',
+    model: 'Q5L',
     category: '车型介绍',
     publishedAt: '2026-03-28'
   },
   {
     id: 'CL-005',
-    title: '一图看懂 2026 一汽奥迪金融方案',
-    coverUrl: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=1200&q=80',
-    type: '图片',
-    assetCount: 4,
+    title: '全新奥迪A6L 购车权益汇总',
+    coverUrl: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=800&q=60',
+    type: '链接',
+    assetCount: 1,
     viewCount: 96,
     favCount: 3,
-    authorName: '销售助手',
-    authorTag: '销',
-    series: 'A4L',
+    shareCount: 0,
+    isFavorite: true,
+    authorName: '经销商素材',
+    authorTag: '经',
+    business: '品质车型',
+    scenario: '购车权益',
+    series: 'A系列',
+    model: '全新A6L',
     category: '购车政策',
-    publishedAt: '2026-03-21'
+    publishedAt: '2026-03-21',
+    externalUrl: 'https://www.audi.cn/zh/models/a6/a6l.html',
+    description: '全新奥迪A6L不仅在外观设计上进行了全面升级，更在智能驾驶和舒适性配置上达到了新的高度。点击下方链接，了解最全面的购车优惠政策与金融方案。'
   },
   {
     id: 'CL-006',
-    title: 'Q5L 试驾路线推荐：城市+高速组合',
-    coverUrl: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=1200&q=80',
-    type: '视频',
+    title: 'quattro四驱技术深度科普',
+    coverUrl: '',
+    type: '纯文本',
     assetCount: 1,
     viewCount: 34,
     favCount: 0,
-    authorName: '经销商运营',
-    authorTag: '经',
-    series: 'Q5L',
-    category: '试驾体验',
+    shareCount: 0,
+    isFavorite: false,
+    authorName: '厂家素材',
+    authorTag: '厂',
+    business: '品牌种草',
+    scenario: 'quattro四驱',
+    series: '全部',
+    model: '全部',
+    category: '技术解析',
     publishedAt: '2026-03-25',
-    videoUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4'
+    description: 'quattro全时四驱系统是奥迪的核心技术之一。它通过机械式中央差速器，能够实现前后轴动力的快速分配。在极端路况下，quattro系统能为车辆提供卓越的牵引力和稳定性，确保驾驶者的安全与操控乐趣。'
   },
   {
     id: 'CL-007',
-    title: '保养知识：刹车片更换建议（话术配图）',
-    coverUrl: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?auto=format&fit=crop&w=1200&q=80',
-    type: '图片',
-    assetCount: 2,
+    title: '奥迪官方商城：尊享购物体验',
+    coverUrl: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=800&q=60',
+    type: '小程序',
+    assetCount: 1,
     viewCount: 58,
     favCount: 1,
-    authorName: '销售助手',
-    authorTag: '销',
-    series: 'Q3',
-    category: '保养知识',
-    publishedAt: '2026-03-18'
+    shareCount: 0,
+    isFavorite: false,
+    authorName: '厂家素材',
+    authorTag: '厂',
+    business: '售后服务',
+    scenario: '用户关爱',
+    series: '全部',
+    model: '全部',
+    category: '服务活动',
+    publishedAt: '2026-03-18',
+    appId: 'wx88888888888888',
+    path: '/pages/mall/index'
   },
   {
     id: 'CL-008',
-    title: 'e-tron 充电指南：家充与公充选择',
-    coverUrl: 'https://images.unsplash.com/photo-1605559424843-9e8f19859d9e?auto=format&fit=crop&w=1200&q=80',
-    type: '图片',
+    title: 'e-tron GT 智驾演示语音讲解',
+    coverUrl: '',
+    type: '语音',
     assetCount: 1,
     viewCount: 22,
     favCount: 0,
-    authorName: '奥迪官方',
-    authorTag: '奥',
-    series: 'e-tron',
-    category: '用车知识',
+    shareCount: 0,
+    isFavorite: false,
+    authorName: '厂家素材',
+    authorTag: '厂',
+    business: '品质车型',
+    scenario: '智能科技',
+    series: '纯电',
+    model: 'e-tron GT',
+    category: '科技体验',
     publishedAt: '2026-03-12'
+  },
+  {
+    id: 'CL-009',
+    title: '奥迪RS系列 赛场荣耀时刻',
+    coverUrl: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=800&q=60',
+    type: '文件',
+    assetCount: 1,
+    viewCount: 88,
+    favCount: 5,
+    shareCount: 0,
+    isFavorite: true,
+    authorName: '厂家素材',
+    authorTag: '厂',
+    business: '品牌种草',
+    scenario: '赛场荣耀',
+    series: '高性能',
+    model: '全部',
+    category: '品牌历史',
+    publishedAt: '2026-03-15',
+    fileName: 'Audi_RS_Motorsport_History.pdf',
+    description: '奥迪RS系列自诞生以来，便与赛车运动紧密相连。本手册详细记录了RS系列在勒芒、DTM等各大赛事中的辉煌战绩与技术演进过程。'
+  },
+  {
+    id: 'CL-010',
+    title: '奥迪官网：探索进取科技',
+    coverUrl: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=800&q=60',
+    type: '链接',
+    assetCount: 1,
+    viewCount: 124,
+    favCount: 8,
+    shareCount: 2,
+    isFavorite: false,
+    authorName: '厂家素材',
+    authorTag: '厂',
+    business: '品牌种草',
+    scenario: '智能科技',
+    series: '全部',
+    model: '全部',
+    category: '品牌信息',
+    publishedAt: '2026-04-05',
+    externalUrl: 'https://www.audi.cn',
+    description: '点击进入奥迪官方网站，了解最新车型资讯、前沿科技动态以及品牌进取故事。我们将为您呈现最真实的奥迪世界。'
   }
 ]);
 
@@ -176,41 +1057,38 @@ const activeItem = computed(() => {
 
 const normalize = (s: string) => s.trim().toLowerCase();
 
-const inPublishTimeRange = (dateStr: string, range: string) => {
-  if (range === '全部') return true;
-  const now = new Date('2026-04-05T00:00:00');
-  const d = new Date(`${dateStr}T00:00:00`);
-  const diffDays = Math.floor((+now - +d) / 86400000);
-  if (range === '近7天') return diffDays <= 7;
-  if (range === '近30天') return diffDays <= 30;
-  if (range === '近90天') return diffDays <= 90;
-  return true;
-};
-
 const filteredItems = computed(() => {
   const k = normalize(keyword.value);
   const f = filterApplied.value;
   let list = items.value.slice();
 
+  // 收藏筛选优先级最高
+  if (showOnlyFavorites.value) {
+    list = list.filter(i => i.isFavorite);
+  }
+
   if (k) {
     list = list.filter(i => {
-      return [i.title, i.authorName, i.series, i.category, i.type].some(x => normalize(String(x)).includes(k));
+      return [i.title, i.authorName, i.series, i.category, i.type, i.business, i.scenario, i.model].some(x => normalize(String(x)).includes(k));
     });
   }
+  if (f.business !== '全部') list = list.filter(i => i.business === f.business);
+  if (f.scenario !== '全部') list = list.filter(i => i.scenario === f.scenario);
   if (f.series !== '全部') list = list.filter(i => i.series === f.series);
+  if (f.model !== '全部') list = list.filter(i => i.model === f.model);
   if (f.creator !== '全部') list = list.filter(i => i.authorName === f.creator);
   if (f.contentType !== '全部') list = list.filter(i => i.type === f.contentType);
-  if (f.publishTime !== '全部') list = list.filter(i => inPublishTimeRange(i.publishedAt, f.publishTime));
 
-  if (sortMode.value === '热度最高') {
+  if (sortMode.value === '最多浏览') {
     list.sort((a, b) => b.viewCount - a.viewCount);
+  } else if (sortMode.value === '最多收藏') {
+    list.sort((a, b) => b.favCount - a.favCount);
   } else {
     list.sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : -1));
   }
   return list;
 });
 
-// 模拟加载态
 const simulateLoading = () => {
   isLoading.value = true;
   setTimeout(() => {
@@ -218,7 +1096,6 @@ const simulateLoading = () => {
   }, 400);
 };
 
-// 监听搜索词变化触发加载
 let searchTimeout: any = null;
 watch(keyword, () => {
   clearTimeout(searchTimeout);
@@ -237,10 +1114,12 @@ const closeFilter = () => {
 
 const resetFilter = () => {
   filterDraft.value = {
+    business: '全部',
+    scenario: '全部',
     series: '全部',
-    creator: '全部',
-    contentType: '全部',
-    publishTime: '全部'
+    model: '全部',
+    creator: '厂家素材',
+    contentType: '全部'
   };
   sortDraft.value = '最新发布';
 };
@@ -252,379 +1131,172 @@ const applyFilter = () => {
   simulateLoading();
 };
 
-type AppliedFilterKey = 'series' | 'creator' | 'contentType' | 'publishTime';
+const isSelected = (group: string, opt: string) => {
+  if (group === '所属业务') return filterDraft.value.business === opt;
+  if (group === '所属场景') return filterDraft.value.scenario === opt;
+  if (group === '所属车系') return filterDraft.value.series === opt;
+  if (group === '所属车型') return filterDraft.value.model === opt;
+  if (group === '内容创作者') return filterDraft.value.creator === opt;
+  if (group === '内容类型') return filterDraft.value.contentType === opt;
+  return false;
+};
+
+const handleFilterClick = (group: string, opt: string) => {
+  if (group === '所属业务') {
+    filterDraft.value.business = opt;
+    filterDraft.value.scenario = '全部'; // 切换业务时重置场景
+  }
+  else if (group === '所属场景') filterDraft.value.scenario = opt;
+  else if (group === '所属车系') {
+    filterDraft.value.series = opt;
+    filterDraft.value.model = '全部'; // 切换车系时重置车型
+  }
+  else if (group === '所属车型') filterDraft.value.model = opt;
+  else if (group === '内容创作者') filterDraft.value.creator = opt;
+  else if (group === '内容类型') filterDraft.value.contentType = opt as any;
+};
+
+type AppliedFilterKey = 'business' | 'scenario' | 'series' | 'model' | 'creator' | 'contentType';
 
 const appliedChips = computed(() => {
   const f = filterApplied.value;
-  const chips: Array<{ key: AppliedFilterKey; label: string; value: string }> = [];
-  if (f.series !== '全部') chips.push({ key: 'series', label: '车系', value: f.series });
-  if (f.creator !== '全部') chips.push({ key: 'creator', label: '创作者', value: f.creator });
-  if (f.contentType !== '全部') chips.push({ key: 'contentType', label: '类型', value: f.contentType });
-  if (f.publishTime !== '全部') chips.push({ key: 'publishTime', label: '时间', value: f.publishTime });
+  const chips: Array<{ key: AppliedFilterKey; label: string; value: string; canDelete: boolean }> = [];
+  
+  // 内容创作者作为必选项，展示但不可删除
+  chips.push({ key: 'creator', label: '来源', value: f.creator, canDelete: false });
+  
+  if (f.business !== '全部') chips.push({ key: 'business', label: '业务', value: f.business, canDelete: true });
+  if (f.scenario !== '全部') chips.push({ key: 'scenario', label: '场景', value: f.scenario, canDelete: true });
+  if (f.series !== '全部') chips.push({ key: 'series', label: '车系', value: f.series, canDelete: true });
+  if (f.model !== '全部') chips.push({ key: 'model', label: '车型', value: f.model, canDelete: true });
+  if (f.contentType !== '全部') chips.push({ key: 'contentType', label: '类型', value: f.contentType, canDelete: true });
+  
   return chips;
 });
 
 const clearApplied = (key: AppliedFilterKey) => {
-  filterApplied.value = { ...filterApplied.value, [key]: '全部' };
-  filterDraft.value = { ...filterDraft.value, [key]: '全部' };
+  if (key === 'business') {
+    filterApplied.value.business = '全部';
+    filterApplied.value.scenario = '全部';
+  } else {
+    filterApplied.value[key] = '全部';
+  }
+  filterDraft.value = { ...filterApplied.value };
   simulateLoading();
 };
 
 const openDetail = (id: string) => {
   activeItemId.value = id;
   showDetail.value = true;
-  document.body.style.overflow = 'hidden'; // 防止背景滚动
+  
+  // 根据不同类型更新右侧需求原型说明
+  if (updateRequirementLogic && activeItem.value) {
+    const type = activeItem.value.type;
+    if (type === '文章') {
+      updateRequirementLogic(['字段映射：文章类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【文章正文】。']);
+    } else if (type === '视频') {
+      updateRequirementLogic(['字段映射：视频类型素材，封面图对应后台上传的【封面图】，标题对应后台配置的【标题】，内容对应后台配置的【描述】。']);
+    } else if (type === '海报') {
+      updateRequirementLogic(['字段映射：海报类型素材，封面图对应后台【上传图片】，标题对应后台【标题】，内容对应后台【描述】。']);
+    } else if (type === '纯文本') {
+      updateRequirementLogic(['字段映射：纯文本类型素材，标题对应后台【标题】，内容对应后台【文本内容】。']);
+    } else if (type === '图片') {
+      updateRequirementLogic(['字段映射：图片类型素材，封面图对应后台【上传图片】，标题对应后台【标题】，内容对应后台【描述】。']);
+    } else if (type === '文件') {
+      updateRequirementLogic(['字段映射：文件类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【描述】。']);
+    } else if (type === '语音') {
+      updateRequirementLogic(['字段映射：语音类型素材，标题对应后台配置的【语音标题】，内容对应后台配置的【无】。']);
+    } else if (type === '小程序') {
+      updateRequirementLogic(['字段映射：小程序类型素材，封面图对应后台【卡片图片】，标题对应后台【标题】，内容对应后台【小程序Appid】和【小程序路径】。']);
+    } else if (type === '链接') {
+      updateRequirementLogic(['字段映射：链接类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【描述】，链接地址对应后台【链接地址】。']);
+    } else {
+      updateRequirementLogic([]);
+    }
+  }
 };
 
 const closeDetail = () => {
+  if (videoPlayer.value) {
+    videoPlayer.value.pause();
+  }
+  isVideoPlaying.value = false;
   showDetail.value = false;
   setTimeout(() => {
     activeItemId.value = null;
-    document.body.style.overflow = '';
-  }, 300); // 配合动画时间
+  }, 300);
+  // 关闭详情时清空动态说明
+  if (updateRequirementLogic) {
+    updateRequirementLogic([]);
+  }
 };
 
 const backToHome = () => {
   router.push('/');
 };
+
+const triggerToast = (msg: string) => {
+  toastMessage.value = msg;
+  showToast.value = true;
+  setTimeout(() => {
+    showToast.value = false;
+  }, 2000);
+};
+
+const handleFavoriteDetail = () => {
+  if (!activeItem.value) return;
+  
+  if (!activeItem.value.isFavorite) {
+    activeItem.value.isFavorite = true;
+    activeItem.value.favCount++;
+    triggerToast('收藏成功');
+  } else {
+    activeItem.value.isFavorite = false;
+    activeItem.value.favCount--;
+    triggerToast('已取消收藏');
+  }
+};
+
+const handleShareConfirm = () => {
+  if (!activeItem.value) return;
+  activeItem.value.shareCount++;
+  showShareSheet.value = false;
+  triggerToast('分享成功');
+};
+
+const toggleFavorites = () => {
+  showOnlyFavorites.value = !showOnlyFavorites.value;
+  simulateLoading();
+};
+
+const defaultCoverText = 'https://picsum.photos/seed/text/400/400.jpg';
+const defaultCoverFile = 'https://picsum.photos/seed/file/400/400.jpg';
+const defaultCoverAudio = 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?auto=format&fit=crop&w=400&h=400&q=60';
+
+const getCoverUrl = (item: ContentItem) => {
+  if (item.type === '纯文本') return defaultCoverText;
+  if (item.type === '文件') return defaultCoverFile;
+  if (item.type === '语音') return defaultCoverAudio;
+  return item.coverUrl || 'https://picsum.photos/400/600';
+};
+
+const contentTypeIcon = (type: ContentType) => {
+  switch (type) {
+    case '图片': return Image;
+    case '纯文本': return FileText;
+    case '视频': return Play;
+    case '文件': return File;
+    case '链接': return Link;
+    case '文章': return BookOpen;
+    case '小程序': return Smartphone;
+    case '语音': return Mic;
+    case '海报': return Layers;
+    default: return FileText;
+  }
+};
 </script>
 
-<template>
-  <div class="min-h-screen bg-gray-50 flex flex-col font-sans">
-    <!-- 顶部导航栏 (固定) -->
-    <header class="bg-white sticky top-0 z-30 shadow-sm border-b border-gray-100">
-      <!-- 状态栏与返回 -->
-      <div class="h-12 flex items-center justify-between px-4 max-w-7xl mx-auto w-full">
-        <button type="button" class="p-1 -ml-1 text-gray-600 hover:text-gray-900 transition-colors rounded-md" @click="backToHome" aria-label="返回">
-          <ChevronLeft :size="24" />
-        </button>
-        <div class="text-[17px] font-bold text-gray-900">内容库</div>
-        <div class="w-8"></div> <!-- 占位保持居中 -->
-      </div>
-      
-      <!-- 搜索与过滤栏 -->
-      <div class="px-4 pb-3 max-w-7xl mx-auto w-full flex flex-col gap-3">
-        <div class="flex items-center gap-3 mt-1">
-          <div class="flex-1 bg-gray-100/80 hover:bg-gray-100 focus-within:bg-white focus-within:ring-2 focus-within:ring-red-500/20 focus-within:border-red-500 transition-all rounded-xl h-11 px-3 flex items-center gap-2 border border-transparent">
-            <Search :size="18" class="text-gray-400" />
-            <input 
-              v-model="keyword" 
-              type="text" 
-              placeholder="搜索素材标题、车系或标签..." 
-              class="flex-1 bg-transparent outline-none text-[15px] text-gray-800 placeholder-gray-400" 
-            />
-            <button v-if="keyword" @click="keyword=''" class="p-1 rounded-full text-gray-400 hover:text-gray-600">
-              <X :size="14" />
-            </button>
-          </div>
-          <button 
-            type="button" 
-            class="h-11 px-4 bg-white rounded-xl border border-gray-200 shadow-sm flex items-center gap-2 hover:bg-gray-50 transition-colors text-gray-700 font-medium" 
-            @click="openFilter"
-          >
-            <Filter :size="18" />
-            <span class="hidden sm:inline">筛选</span>
-          </button>
-        </div>
-
-        <!-- 选中的筛选标签 (横向滚动) -->
-        <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1 -mb-1">
-          <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-100 text-[13px] text-gray-600 font-medium whitespace-nowrap shrink-0">
-            排序: {{ sortMode }}
-          </span>
-          <span
-            v-for="chip in appliedChips"
-            :key="chip.key"
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-[13px] text-red-600 font-medium border border-red-100 whitespace-nowrap shrink-0 transition-all hover:bg-red-100"
-          >
-            {{ chip.label }}: {{ chip.value }}
-            <button type="button" class="p-0.5 rounded-full hover:bg-red-200 transition-colors" @click="clearApplied(chip.key)">
-              <X :size="12" />
-            </button>
-          </span>
-        </div>
-      </div>
-    </header>
-
-    <!-- 主体瀑布流内容 -->
-    <main class="flex-1 px-4 py-5 max-w-7xl mx-auto w-full">
-      <!-- 骨架屏加载态 -->
-      <div v-if="isLoading" class="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-4">
-        <div v-for="i in 8" :key="i" class="mb-4 break-inside-avoid">
-          <div class="bg-white rounded-2xl p-2 animate-pulse shadow-sm">
-            <div class="w-full h-40 bg-gray-200 rounded-xl mb-3"></div>
-            <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-            <div class="h-3 bg-gray-200 rounded w-1/2"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 空态提示 -->
-      <div v-else-if="filteredItems.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
-        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-          <FolderSearch :size="40" class="text-gray-400" />
-        </div>
-        <h3 class="text-lg font-bold text-gray-800 mb-1">未找到相关素材</h3>
-        <p class="text-sm text-gray-500 max-w-xs">尝试更换关键词或清除筛选条件，以发现更多精彩内容。</p>
-        <button @click="resetFilter(); applyFilter(); keyword=''" class="mt-6 px-6 py-2 bg-red-500 text-white rounded-full font-medium hover:bg-red-600 transition-colors">
-          清除所有筛选
-        </button>
-      </div>
-
-      <!-- 瀑布流网格 -->
-      <div v-else class="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-4">
-        <div v-for="item in filteredItems" :key="item.id" class="mb-4 break-inside-avoid">
-          <button 
-            type="button" 
-            class="w-full text-left bg-white rounded-2xl shadow-sm hover:shadow-md border border-gray-100 overflow-hidden active:scale-[0.98] transition-all group" 
-            @click="openDetail(item.id)"
-          >
-            <!-- 封面图区域 -->
-            <div class="relative overflow-hidden">
-              <img :src="item.coverUrl" alt="" class="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
-
-              <!-- 左上角分类标签 -->
-              <div class="absolute top-2 left-2 px-2 py-1 rounded bg-black/40 backdrop-blur-sm text-white text-[11px] font-medium tracking-wide">
-                {{ item.category }}
-              </div>
-
-              <!-- 右上角图集标识 -->
-              <div v-if="item.assetCount > 1" class="absolute top-2 right-2 px-2 py-1 rounded bg-black/40 backdrop-blur-sm text-white text-[11px] flex items-center gap-1 font-medium">
-                <Layers :size="12" />
-                <span>{{ item.assetCount }}</span>
-              </div>
-
-              <!-- 视频播放标识 -->
-              <div v-if="item.type === '视频'" class="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/20 transition-colors">
-                <div class="w-10 h-10 rounded-full bg-white/30 backdrop-blur-md flex items-center justify-center">
-                  <Play :size="20" class="text-white translate-x-[1px]" />
-                </div>
-              </div>
-
-              <!-- 底部浏览量统计 -->
-              <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent flex items-end">
-                <div class="inline-flex items-center gap-1 text-white text-[11px] font-medium">
-                  <Eye :size="12" />
-                  {{ item.viewCount }}
-                </div>
-              </div>
-            </div>
-
-            <!-- 信息区域 -->
-            <div class="p-3">
-              <h3 class="text-[14px] font-bold text-gray-900 leading-snug line-clamp-2 mb-2 group-hover:text-red-600 transition-colors">
-                {{ item.title }}
-              </h3>
-              <div class="flex items-center justify-between mt-auto">
-                <div class="flex items-center gap-1.5 min-w-0">
-                  <div class="w-5 h-5 rounded-full bg-red-50 flex items-center justify-center text-[10px] font-bold text-red-600 shrink-0">
-                    {{ item.authorTag }}
-                  </div>
-                  <span class="text-[11px] text-gray-500 truncate">{{ item.authorName }}</span>
-                </div>
-                <div class="flex items-center gap-1 text-[11px] text-gray-400 shrink-0">
-                  <Star :size="12" />
-                  {{ item.favCount }}
-                </div>
-              </div>
-            </div>
-          </button>
-        </div>
-      </div>
-    </main>
-
-    <!-- 侧边栏/底部抽屉筛选面板 (统一铺平选项，减少点击) -->
-    <div v-if="showFilterSheet" class="fixed inset-0 z-[60] flex items-end md:items-stretch md:justify-end">
-      <!-- 背景遮罩 -->
-      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" @click="closeFilter"></div>
-      
-      <!-- 面板内容 -->
-      <div class="relative w-full md:w-96 bg-white rounded-t-3xl md:rounded-none md:rounded-l-3xl shadow-2xl flex flex-col h-[85vh] md:h-full transform transition-transform animate-slide-up md:animate-slide-left">
-        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <div class="text-[18px] font-bold text-gray-900">高级筛选</div>
-          <button type="button" class="p-2 -mr-2 bg-gray-50 rounded-full text-gray-500 hover:text-gray-900 transition-colors" @click="closeFilter">
-            <X :size="18" />
-          </button>
-        </div>
-
-        <div class="flex-1 overflow-y-auto px-5 py-4 space-y-6 hide-scrollbar">
-          <!-- 排序方式 -->
-          <section>
-            <h4 class="text-sm font-bold text-gray-900 mb-3">排序方式</h4>
-            <div class="flex flex-wrap gap-2">
-              <button
-                v-for="opt in sortOptions" :key="opt" type="button"
-                @click="sortDraft = opt"
-                :class="['px-4 py-2 rounded-lg text-[13px] font-medium transition-all', sortDraft === opt ? 'bg-red-50 text-red-600 border border-red-200 shadow-sm' : 'bg-gray-50 text-gray-600 border border-transparent hover:bg-gray-100']"
-              >
-                {{ opt }}
-              </button>
-            </div>
-          </section>
-
-          <!-- 品质车系 -->
-          <section>
-            <h4 class="text-sm font-bold text-gray-900 mb-3">品质车系</h4>
-            <div class="flex flex-wrap gap-2">
-              <button
-                v-for="opt in seriesOptions" :key="opt" type="button"
-                @click="filterDraft.series = opt"
-                :class="['px-4 py-2 rounded-lg text-[13px] font-medium transition-all', filterDraft.series === opt ? 'bg-red-50 text-red-600 border border-red-200 shadow-sm' : 'bg-gray-50 text-gray-600 border border-transparent hover:bg-gray-100']"
-              >
-                {{ opt }}
-              </button>
-            </div>
-          </section>
-
-          <!-- 创作者 -->
-          <section>
-            <h4 class="text-sm font-bold text-gray-900 mb-3">内容创作者</h4>
-            <div class="flex flex-wrap gap-2">
-              <button
-                v-for="opt in creatorOptions" :key="opt" type="button"
-                @click="filterDraft.creator = opt"
-                :class="['px-4 py-2 rounded-lg text-[13px] font-medium transition-all', filterDraft.creator === opt ? 'bg-red-50 text-red-600 border border-red-200 shadow-sm' : 'bg-gray-50 text-gray-600 border border-transparent hover:bg-gray-100']"
-              >
-                {{ opt }}
-              </button>
-            </div>
-          </section>
-
-          <!-- 内容类型 -->
-          <section>
-            <h4 class="text-sm font-bold text-gray-900 mb-3">内容类型</h4>
-            <div class="flex flex-wrap gap-2">
-              <button
-                v-for="opt in contentTypeOptions" :key="opt" type="button"
-                @click="filterDraft.contentType = opt"
-                :class="['px-4 py-2 rounded-lg text-[13px] font-medium transition-all', filterDraft.contentType === opt ? 'bg-red-50 text-red-600 border border-red-200 shadow-sm' : 'bg-gray-50 text-gray-600 border border-transparent hover:bg-gray-100']"
-              >
-                {{ opt }}
-              </button>
-            </div>
-          </section>
-
-          <!-- 发布时间 -->
-          <section>
-            <h4 class="text-sm font-bold text-gray-900 mb-3">发布时间</h4>
-            <div class="flex flex-wrap gap-2">
-              <button
-                v-for="opt in publishTimeOptions" :key="opt" type="button"
-                @click="filterDraft.publishTime = opt"
-                :class="['px-4 py-2 rounded-lg text-[13px] font-medium transition-all', filterDraft.publishTime === opt ? 'bg-red-50 text-red-600 border border-red-200 shadow-sm' : 'bg-gray-50 text-gray-600 border border-transparent hover:bg-gray-100']"
-              >
-                {{ opt }}
-              </button>
-            </div>
-          </section>
-        </div>
-
-        <div class="p-4 border-t border-gray-100 bg-white flex items-center gap-3 shrink-0">
-          <button type="button" class="w-1/3 h-12 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 transition-colors" @click="resetFilter">
-            重置
-          </button>
-          <button type="button" class="flex-1 h-12 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 shadow-md shadow-red-500/20 transition-all" @click="applyFilter">
-            查看结果
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 详情模态框 (响应式：移动端全屏，桌面端弹窗) -->
-    <div v-if="showDetail && activeItem" class="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 md:bg-black/60 md:p-6 backdrop-blur-sm transition-opacity">
-      <div class="relative w-full h-full md:max-w-5xl md:h-[85vh] bg-white md:rounded-2xl overflow-hidden flex flex-col md:flex-row shadow-2xl animate-fade-in">
-        
-        <!-- 左侧媒体展示区 -->
-        <div class="relative w-full h-[45vh] md:h-full md:w-3/5 bg-black flex items-center justify-center group shrink-0">
-          <img v-if="activeItem.type === '图片'" :src="activeItem.coverUrl" alt="" class="w-full h-full object-contain" />
-          <video
-            v-else
-            class="w-full h-full object-contain"
-            :src="activeItem.videoUrl"
-            :poster="activeItem.coverUrl"
-            controls
-            playsinline
-            autoplay
-          ></video>
-
-          <!-- 悬浮返回/关闭按钮 (移动端左上，桌面端悬浮) -->
-          <button 
-            type="button" 
-            class="absolute top-4 left-4 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md flex items-center justify-center text-white transition-colors z-10" 
-            @click="closeDetail"
-          >
-            <ChevronLeft :size="24" class="md:hidden" />
-            <X :size="20" class="hidden md:block" />
-          </button>
-        </div>
-
-        <!-- 右侧信息交互区 -->
-        <div class="flex-1 flex flex-col bg-white overflow-hidden">
-          <div class="flex-1 overflow-y-auto px-6 py-6 hide-scrollbar">
-            <!-- 作者信息 -->
-            <div class="flex items-center gap-3 mb-5">
-              <div class="w-10 h-10 rounded-full bg-red-50 text-red-600 border border-red-100 flex items-center justify-center font-bold shrink-0">
-                {{ activeItem.authorTag }}
-              </div>
-              <div class="flex-1">
-                <div class="text-[15px] font-bold text-gray-900">{{ activeItem.authorName }}</div>
-                <div class="text-[12px] text-gray-400 mt-0.5">{{ activeItem.publishedAt }}</div>
-              </div>
-              <button class="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-[13px] font-bold rounded-full transition-colors">
-                关注
-              </button>
-            </div>
-
-            <!-- 标签 -->
-            <div class="flex flex-wrap items-center gap-2 mb-3">
-              <span class="px-2.5 py-1 bg-gray-100 text-gray-600 text-[12px] font-medium rounded"># {{ activeItem.category }}</span>
-              <span class="px-2.5 py-1 bg-gray-100 text-gray-600 text-[12px] font-medium rounded"># {{ activeItem.series }}</span>
-            </div>
-
-            <!-- 标题与描述 -->
-            <h2 class="text-xl font-extrabold text-gray-900 leading-snug mb-3">
-              {{ activeItem.title }}
-            </h2>
-            <p class="text-[15px] text-gray-600 leading-relaxed">
-              {{ activeItem.description || `全新奥迪${activeItem.series}带来更具运动感的外观与更智能的驾驶体验。建议结合客户画像与沟通场景，选择合适的内容触达方式，提高到店与试驾转化。` }}
-            </p>
-          </div>
-
-          <!-- 底部交互动作栏 -->
-          <div class="p-4 border-t border-gray-100 bg-white flex items-center justify-around shrink-0">
-            <button class="flex flex-col items-center gap-1 text-gray-500 hover:text-red-600 transition-colors group">
-              <div class="w-10 h-10 rounded-full bg-gray-50 group-hover:bg-red-50 flex items-center justify-center transition-colors">
-                <Star :size="20" />
-              </div>
-              <span class="text-[12px] font-medium">{{ activeItem.favCount }} 收藏</span>
-            </button>
-            <button class="flex flex-col items-center gap-1 text-gray-500 hover:text-blue-600 transition-colors group">
-              <div class="w-10 h-10 rounded-full bg-gray-50 group-hover:bg-blue-50 flex items-center justify-center transition-colors">
-                <MessageSquare :size="20" />
-              </div>
-              <span class="text-[12px] font-medium">评论</span>
-            </button>
-            <button class="flex flex-col items-center gap-1 text-gray-500 hover:text-green-600 transition-colors group">
-              <div class="w-10 h-10 rounded-full bg-gray-50 group-hover:bg-green-50 flex items-center justify-center transition-colors">
-                <Share2 :size="20" />
-              </div>
-              <span class="text-[12px] font-medium">转发</span>
-            </button>
-            <button class="flex flex-col items-center gap-1 text-gray-500 hover:text-purple-600 transition-colors group">
-              <div class="w-10 h-10 rounded-full bg-gray-50 group-hover:bg-purple-50 flex items-center justify-center transition-colors">
-                <Download :size="20" />
-              </div>
-              <span class="text-[12px] font-medium">保存</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <style scoped>
-/* 隐藏滚动条但保留滚动功能 */
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -633,7 +1305,6 @@ const backToHome = () => {
   scrollbar-width: none;
 }
 
-/* 简单的进场动画 */
 @keyframes slide-up {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
@@ -642,22 +1313,11 @@ const backToHome = () => {
   animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@keyframes slide-left {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
-}
-@media (min-width: 768px) {
-  .md\:animate-slide-left {
-    animation: slide-left 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-}
-
 @keyframes fade-in {
-  from { opacity: 0; transform: scale(0.98); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .animate-fade-in {
   animation: fade-in 0.2s ease-out forwards;
 }
 </style>
-

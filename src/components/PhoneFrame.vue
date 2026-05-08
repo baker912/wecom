@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
-import { computed } from 'vue';
-import { Home, Wifi, Signal, Info, Target, Layout } from 'lucide-vue-next';
+import { computed, ref, provide } from 'vue';
+import { Home, Wifi, Signal, Info, Target, Layout, Database, Download, Filter, ArrowUpDown, CheckCircle2, XCircle, Image, FileText } from 'lucide-vue-next';
 import PrototypeCodeLocation from './PrototypeCodeLocation.vue';
 
 const route = useRoute();
 const router = useRouter();
 
+// 定义动态补充说明的逻辑
+const dynamicLogic = ref<string[]>([]);
+provide('updateRequirementLogic', (logic: string[]) => {
+  dynamicLogic.value = logic;
+});
+
 // 需求描述数据映射
-const requirementInfoMap: Record<string, { title: string; subtitle: string; folderPath: string; logic: string[] }> = {
+const requirementInfoMap: Record<string, { title: string; subtitle: string; folderPath: string; logic: string[]; table?: any[] }> = {
   '/features/vin-tags': {
     title: '车辆信息标签按 VIN 码展示',
     subtitle: '核心需求：解决多辆车，有不同的车辆信息标签做区分展示的问题',
@@ -33,6 +39,17 @@ const requirementInfoMap: Record<string, { title: string; subtitle: string; fold
       '瀑布流双列：内容以双列瀑布流方式展示，提升浏览效率。',
       '筛选抽屉：支持车系/创作者/内容类型/发布时间/排序方式筛选。',
       '内容详情：点击卡片查看详情，支持视频播放与互动入口。'
+    ],
+    table: [
+      { type: '文章', title: '【标题】', cover: '【封面图】', content: '【文章正文】', other: '-' },
+      { type: '海报', title: '【标题】', cover: '【上传图片】', content: '【描述】', other: '-' },
+      { type: '图片', title: '【标题】', cover: '【上传图片】', content: '【描述】', other: '-' },
+      { type: '视频', title: '【标题】', cover: '【封面图】', content: '【描述】', other: '【视频文件】' },
+      { type: '文件', title: '【标题】', cover: '【封面图】', content: '【描述】', other: '【附件】' },
+      { type: '链接', title: '【标题】', cover: '【封面图】', content: '【描述】', other: '【URL地址】' },
+      { type: '小程序', title: '【标题】', cover: '【卡片图片】', content: '-', other: '【AppID/路径】' },
+      { type: '纯文本', title: '【标题】', cover: '-', content: '【文本内容】', other: '-' },
+      { type: '语音', title: '【语音标题】', cover: '-', content: '-', other: '【音频文件】' }
     ]
   },
   '/customer-profile': {
@@ -77,26 +94,26 @@ const currentTime = computed(() => {
       <!-- iPhone 16 Pro 外壳容器 (左侧) -->
       <div class="relative group animate-fade-in shrink-0">
         <!-- 手机外框 (Titanium Frame) -->
-        <div class="relative w-[340px] h-[720px] sm:w-[430px] sm:h-[880px] bg-[#1c1c1e] rounded-[55px] p-[10px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5),0_30px_60px_-30px_rgba(0,0,0,0.6)] border-[1px] border-[#3a3a3c] flex items-center justify-center transition-transform duration-500 group-hover:scale-[1.01]">
+        <div class="relative w-[340px] h-[720px] sm:w-[400px] sm:h-[820px] bg-[#1c1c1e] rounded-[55px] p-[10px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5),0_30px_60px_-30px_rgba(0,0,0,0.6)] border-[1px] border-[#3a3a3c] flex items-center justify-center transition-transform duration-500 group-hover:scale-[1.01]">
           
           <!-- 内黑边 (Bezel) -->
           <div class="relative w-full h-full bg-black rounded-[46px] overflow-hidden border-[6px] border-[#000000] transform-gpu">
             
             <!-- 灵动岛 (Dynamic Island) -->
-            <div class="absolute top-2 left-1/2 -translate-x-1/2 w-[110px] h-[32px] bg-black rounded-full z-50 flex items-center justify-center border-[1px] border-white/5 shadow-inner">
-              <div class="w-3 h-3 bg-[#1a1a1a] rounded-full mr-2 shadow-inner"></div>
-              <div class="w-2 h-2 bg-[#1a1a1a] rounded-full"></div>
+            <div class="absolute top-2 left-1/2 -translate-x-1/2 w-[100px] h-[28px] bg-black rounded-full z-50 flex items-center justify-center border-[1px] border-white/5 shadow-inner">
+              <div class="w-2.5 h-2.5 bg-[#1a1a1a] rounded-full mr-2 shadow-inner"></div>
+              <div class="w-1.5 h-1.5 bg-[#1a1a1a] rounded-full"></div>
             </div>
 
             <!-- 状态栏 (Status Bar) -->
             <div class="absolute top-0 left-0 w-full h-11 px-8 flex justify-between items-end pb-1.5 z-[1000] text-black select-none pointer-events-none">
-              <span class="text-[13px] font-bold">{{ currentTime }}</span>
-              <div class="flex items-center gap-1.5">
-                <Signal :size="14" :strokeWidth="2.5" />
-                <Wifi :size="14" :strokeWidth="2.5" />
-                <div class="relative w-6 h-3 border-[1.5px] border-black rounded-[3px] flex items-center p-[1px]">
+              <span class="text-[12px] font-bold">{{ currentTime }}</span>
+              <div class="flex items-center gap-1">
+                <Signal :size="12" :strokeWidth="2.5" />
+                <Wifi :size="12" :strokeWidth="2.5" />
+                <div class="relative w-5 h-2.5 border-[1.5px] border-black rounded-[2px] flex items-center p-[1px]">
                   <div class="h-full bg-black rounded-[0.5px]" style="width: 85%"></div>
-                  <div class="absolute -right-[3.5px] top-1/2 -translate-y-1/2 w-[2px] h-[4px] bg-black rounded-r-[1px]"></div>
+                  <div class="absolute -right-[3px] top-1/2 -translate-y-1/2 w-[1.5px] h-[3px] bg-black rounded-r-[0.5px]"></div>
                 </div>
               </div>
             </div>
@@ -122,16 +139,16 @@ const currentTime = computed(() => {
       </div>
 
       <!-- 需求说明区域 (右侧) -->
-      <div v-if="currentInfo" class="flex-1 max-w-xl animate-fade-in-right py-10">
+      <div v-if="currentInfo" class="flex-1 min-w-0 max-w-[900px] animate-fade-in-right py-10">
         <div class="inline-flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded-full text-xs font-bold mb-6">
           <Target :size="14" />
           需求原型说明
         </div>
         
-        <h2 class="text-4xl font-bold text-gray-900 mb-4 tracking-tight leading-tight">
+        <h2 class="text-3xl font-black text-gray-900 mb-4 tracking-tight leading-tight">
           {{ currentInfo.title }}
         </h2>
-        <p class="text-xl text-gray-500 mb-10 font-medium border-l-4 border-blue-600 pl-4">
+        <p class="text-lg text-gray-500 mb-10 font-medium border-l-4 border-blue-600 pl-4">
           {{ currentInfo.subtitle }}
         </p>
 
@@ -141,16 +158,128 @@ const currentTime = computed(() => {
 
         <div class="space-y-8">
           <div>
-            <div class="flex items-center gap-2 text-gray-900 font-bold mb-4">
+            <div class="flex items-center gap-2 text-gray-900 font-bold mb-6">
               <Layout :size="20" class="text-blue-600" />
-              <span>功能逻辑说明</span>
+              <span class="text-lg">功能逻辑说明</span>
             </div>
+            
+            <!-- 9个素材类型对比表 - 简化设计，增加宽度 -->
+            <div v-if="currentInfo.table && (!dynamicLogic || dynamicLogic.length === 0)" class="mb-8">
+              <div class="flex items-center gap-2 mb-3 pl-1">
+                <div class="w-1 h-4 bg-blue-600 rounded-full"></div>
+                <span class="text-sm font-bold text-gray-700">素材字段映射明细表</span>
+              </div>
+              <div class="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left border-collapse table-auto">
+                    <thead>
+                      <tr class="bg-gray-50/50 border-b border-gray-100">
+                        <th class="px-4 py-2.5 text-[12px] font-bold text-gray-900 whitespace-nowrap border-r border-gray-50 text-center">序号</th>
+                        <th class="px-4 py-2.5 text-[12px] font-bold text-gray-900 whitespace-nowrap border-r border-gray-50">素材类型</th>
+                        <th class="px-4 py-2.5 text-[12px] font-bold text-gray-900 whitespace-nowrap border-r border-gray-50">封面图</th>
+                        <th class="px-4 py-2.5 text-[12px] font-bold text-gray-900 whitespace-nowrap border-r border-gray-50">内容</th>
+                        <th class="px-4 py-2.5 text-[12px] font-bold text-gray-900 whitespace-nowrap">补充内容</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                      <tr v-for="(row, idx) in currentInfo.table" :key="idx" 
+                          class="hover:bg-blue-50/30 transition-colors group">
+                        <td class="px-4 py-2 text-[12px] font-medium text-gray-400 whitespace-nowrap border-r border-gray-50 text-center">
+                          {{ idx + 1 }}
+                        </td>
+                        <td class="px-4 py-2 text-[12px] font-bold text-gray-900 whitespace-nowrap border-r border-gray-50">
+                          {{ row.type }}
+                        </td>
+                        <td class="px-4 py-2 text-[12px] text-black font-bold whitespace-nowrap border-r border-gray-50">
+                          <span v-if="row.cover !== '-'" class="px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100/50">{{ row.cover }}</span>
+                          <span v-else class="text-blue-600/40 font-bold">-</span>
+                        </td>
+                        <td class="px-4 py-2 text-[12px] text-black font-bold whitespace-nowrap border-r border-gray-50">
+                          <span v-if="row.content !== '-'" class="px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100/50">{{ row.content }}</span>
+                          <span v-else class="text-blue-600/40 font-bold">-</span>
+                        </td>
+                        <td class="px-4 py-2 text-[12px] text-black font-bold whitespace-nowrap">
+                          <span v-if="row.other !== '-'" class="px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100/50">{{ row.other }}</span>
+                          <span v-else class="text-blue-600/40 font-bold">-</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
             <ul class="space-y-4">
-              <li v-for="(item, index) in currentInfo.logic" :key="index" class="flex items-start gap-3 group">
-                <div class="w-6 h-6 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+              <!-- 基础逻辑 (在进入详情页展示字段映射时隐藏) -->
+              <template v-if="dynamicLogic.length === 0">
+                <li v-for="(item, index) in currentInfo.logic" :key="index" class="flex items-start gap-3 group text-gray-600">
+                  <div class="w-6 h-6 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    {{ index + 1 }}
+                  </div>
+                  <div class="flex-1">
+                    <span class="leading-relaxed group-hover:text-gray-900 transition-colors">{{ item }}</span>
+                  </div>
+                </li>
+              </template>
+
+              <!-- 动态补充逻辑 (进入详情页后唯一展示) -->
+              <li v-for="(item, index) in dynamicLogic" :key="'dynamic-' + index" class="flex items-start gap-3 group animate-fade-in-right">
+                <div class="w-6 h-6 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
                   {{ index + 1 }}
                 </div>
-                <span class="text-gray-600 leading-relaxed group-hover:text-gray-900 transition-colors">{{ item }}</span>
+                <div class="flex-1">
+                   <span class="text-indigo-600 font-bold leading-relaxed">
+                     {{ item.includes('字段映射') ? '字段映射' : item }}
+                   </span>
+                   
+                   <!-- 可视化连线映射 (根据内容动态渲染) -->
+                  <div v-if="item.includes('字段映射')" class="mt-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 space-y-3">
+                    <!-- 封面图映射 (如果有) -->
+                    <div v-if="item.includes('封面图对应')" class="flex items-center gap-3">
+                      <div class="px-2 py-1 bg-indigo-600 text-white text-[12px] font-bold rounded">前端封面</div>
+                      <div class="flex-1 flex items-center gap-1 opacity-30">
+                        <div class="h-[1px] flex-1 border-t border-dashed border-indigo-600"></div>
+                        <div class="w-1 h-1 rounded-full bg-indigo-600"></div>
+                      </div>
+                      <div class="text-[12px] text-indigo-600 font-black tracking-tight">
+                        {{ item.match(/封面图对应后台.*?【(.*?)】/)?.[1] ? `后台上传的【${item.match(/封面图对应后台.*?【(.*?)】/)?.[1]}】` : '后台配置' }}
+                      </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                      <div class="px-2 py-1 bg-indigo-600 text-white text-[12px] font-bold rounded">前端标题</div>
+                      <div class="flex-1 flex items-center gap-1 opacity-30">
+                        <div class="h-[1px] flex-1 border-t border-dashed border-indigo-600"></div>
+                        <div class="w-1 h-1 rounded-full bg-indigo-600"></div>
+                      </div>
+                      <div class="text-[12px] text-indigo-600 font-black tracking-tight">
+                        {{ item.match(/标题对应后台.*?【(.*?)】/)?.[1] ? `后台配置的【${item.match(/标题对应后台.*?【(.*?)】/)?.[1]}】` : '后台配置' }}
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <div class="px-2 py-1 bg-indigo-600 text-white text-[12px] font-bold rounded">前端内容</div>
+                      <div class="flex-1 flex items-center gap-1 opacity-30">
+                        <div class="h-[1px] flex-1 border-t border-dashed border-indigo-600"></div>
+                        <div class="w-1 h-1 rounded-full bg-indigo-600"></div>
+                      </div>
+                      <div class="text-[12px] text-indigo-600 font-black tracking-tight">
+                        {{ item.match(/内容对应后台.*?【(.*?)】/)?.[1] ? `后台配置的【${item.match(/内容对应后台.*?【(.*?)】/)?.[1]}】` : '后台配置' }}
+                      </div>
+                    </div>
+
+                    <!-- 链接地址映射 (针对链接类型) -->
+                    <div v-if="item.includes('链接地址对应')" class="flex items-center gap-3">
+                      <div class="px-2 py-1 bg-indigo-600 text-white text-[12px] font-bold rounded shadow-sm">前端链接</div>
+                      <div class="flex-1 flex items-center gap-1 opacity-20">
+                        <div class="h-[1px] flex-1 border-t border-dashed border-indigo-600"></div>
+                        <div class="w-1.5 h-1.5 rounded-full bg-indigo-600"></div>
+                      </div>
+                      <div class="text-[13px] text-indigo-700 font-bold tracking-tight">
+                        {{ item.match(/链接地址对应后台.*?【(.*?)】/)?.[1] ? `后台配置的【${item.match(/链接地址对应后台.*?【(.*?)】/)?.[1]}】` : '后台配置' }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </li>
             </ul>
           </div>
@@ -191,11 +320,25 @@ const currentTime = computed(() => {
   scrollbar-width: none;
 }
 
-@keyframes fadeIn {
+@keyframes fade-in {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
 .animate-fade-in {
-  animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in-right {
+  animation: slide-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 </style>
