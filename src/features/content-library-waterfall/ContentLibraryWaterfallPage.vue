@@ -1,6 +1,6 @@
 <template>
   <!-- 彻底重构：锁定屏幕，严禁任何形式的越界 -->
-  <div class="fixed inset-0 bg-white flex flex-col overflow-hidden select-none touch-none">
+  <div class="fixed inset-0 bg-white flex flex-col overflow-hidden select-none touch-none" @click="showRadarTooltip = false">
     
     <!-- 视图切换容器 -->
     <div class="flex-1 relative overflow-hidden touch-auto">
@@ -294,9 +294,10 @@
               <button
                 v-for="opt in contentTypeOptions" :key="opt"
                 @click="handleFilterClick('内容类型', opt)"
-                :class="['h-10 rounded-xl text-[12px] font-bold transition-all border', filterDraft.contentType === opt ? 'bg-red-50 text-red-600 border-red-200' : 'bg-gray-50 text-gray-500 border-transparent active:bg-gray-100']"
+                :class="['h-12 rounded-xl text-[12px] font-bold transition-all border flex flex-col items-center justify-center gap-0.5', filterDraft.contentType === opt ? 'bg-red-50 text-red-600 border-red-200' : 'bg-gray-50 text-gray-500 border-transparent active:bg-gray-100']"
               >
-                {{ opt }}
+                <span>{{ opt }}</span>
+                <span class="text-[9px] opacity-60 font-medium">({{ typeCounts[opt] || 0 }})</span>
               </button>
             </div>
           </section>
@@ -374,7 +375,7 @@
               <span class="text-[12px] font-bold leading-none mt-1">{{ activeItem.favCount }}</span>
             </button>
             <!-- 分享 -->
-            <button class="flex flex-col items-center gap-0.5 text-white active:opacity-20 transition-all active:scale-90" @click="showShareSheet = true">
+            <button class="flex flex-col items-center gap-0.5 text-white active:opacity-20 transition-all active:scale-90" @click="openShare">
               <Share2 :size="22" />
               <span class="text-[12px] font-bold leading-none mt-1">{{ activeItem.shareCount }}</span>
             </button>
@@ -384,12 +385,17 @@
           <div class="absolute bottom-0 left-0 right-0 p-5 pb-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none">
             <div class="space-y-2 max-w-full pr-14 pointer-events-auto">
               <!-- 发布者信息 -->
-              <div class="flex items-center gap-2.5 mb-1">
+              <div class="flex items-center gap-2.5 mb-2.5">
                 <div class="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center font-bold border-2 border-white shadow-lg shrink-0">{{ activeItem.authorTag }}</div>
                 <div class="flex flex-col">
                   <span class="text-[16px] font-bold text-white drop-shadow-md">{{ activeItem.authorName }}</span>
                   <span class="text-[11px] text-white/60 font-medium">{{ activeItem.publishedAt }}</span>
                 </div>
+              </div>
+              
+              <!-- 标签区域 (视频详情) -->
+              <div v-if="detailTags.length > 0" class="flex flex-wrap gap-x-2.5 gap-y-1 mb-2">
+                <span v-for="tag in detailTags" :key="tag" class="text-[11px] text-blue-400 font-medium">#{{ tag }}</span>
               </div>
               
               <!-- 标题 -->
@@ -398,21 +404,29 @@
               </h2>
               
               <!-- 描述 -->
-              <p class="text-[14px] text-white/90 leading-relaxed drop-shadow-sm line-clamp-3">
+              <p class="text-[14px] text-white/90 leading-relaxed drop-shadow-sm line-clamp-3 mb-2">
                 {{ activeItem.description }}
               </p>
 
-              <!-- 是否配置雷达 (视频详情) -->
-              <div class="pt-2 flex flex-col gap-1">
-                <div class="flex items-center gap-2">
-                  <span class="text-[12px] font-bold text-white/70">是否配置雷达:</span>
-                  <span class="text-[12px] font-bold" :class="activeItem.hasRadar ? 'text-green-400' : 'text-white/40'">
-                    {{ activeItem.hasRadar ? '是' : '否' }}
-                  </span>
+              <!-- 雷达标签 (视频详情) -->
+              <div class="relative">
+                <div 
+                  class="flex items-center gap-1 px-2.5 py-1 rounded-lg backdrop-blur-sm border shadow-sm active:scale-95 active:opacity-80 cursor-pointer transition-all duration-200 group" 
+                  :class="activeItem.hasRadar ? 'bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30 hover:border-green-500/50' : 'bg-white/5 text-white/40 border-white/10 hover:bg-white/10 hover:border-white/20'"
+                  @click.stop="showRadarTooltip = !showRadarTooltip"
+                >
+                  <Target :size="12" class="group-hover:scale-110 transition-transform" />
+                  <span class="text-[11px] font-bold">{{ activeItem.hasRadar ? '已配置雷达' : '未配置雷达' }}</span>
                 </div>
-                <p v-if="activeItem.hasRadar" class="text-[11px] text-white/50 italic leading-tight">
-                  注：配置雷达后，发送出的素材将被封装成链接形式。
-                </p>
+
+                <!-- 雷达气泡说明 (视频详情) -->
+                <div v-if="showRadarTooltip" class="absolute bottom-full left-0 mb-3 z-[130] animate-fade-in">
+                  <div class="bg-slate-900/95 backdrop-blur-xl text-white text-[11px] py-2.5 px-4 rounded-xl shadow-2xl whitespace-nowrap relative border border-white/10 ring-1 ring-black/50">
+                    <!-- 小三角 -->
+                    <div class="absolute -bottom-1 left-6 w-2 h-2 bg-slate-900 rotate-45 border-r border-b border-white/10"></div>
+                    配置雷达的素材，发送出去后将被封装成链接形式，支持行为追踪
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -442,34 +456,42 @@
              <img :src="getCoverUrl(activeItem)" class="w-full h-auto max-h-[75vh] object-contain" />
            </div>
  
-           <div class="px-5 py-6">
-             <div class="flex items-center gap-3 mb-6">
+           <div class="px-5 pt-4 pb-6">
+             <div class="flex items-center gap-3 mb-4">
             <div class="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center font-bold border border-red-100">{{ activeItem.authorTag }}</div>
             <div class="flex-1 min-w-0">
               <div class="text-[15px] font-bold text-gray-900 truncate">{{ activeItem.authorName }}</div>
               <div class="text-[12px] text-gray-400 mt-0.5">{{ activeItem.publishedAt }}</div>
             </div>
-            <!-- 内容类型标签 (Icon + 文字) - 右对齐且放大 -->
-            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 text-gray-600 shrink-0 border border-gray-50">
-              <component :is="contentTypeIcon(activeItem.type)" :size="14" />
-              <span class="text-[12px] font-bold">{{ activeItem.type }}</span>
+            <!-- 雷达标签 - 保持原位 -->
+            <div class="flex flex-col items-end gap-1.5 shrink-0 ml-4 relative">
+              <div 
+                class="flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-all shadow-sm active:scale-95 active:opacity-80 cursor-pointer group"
+                :class="activeItem.hasRadar ? 'bg-green-50 text-green-700 border-green-100 hover:bg-green-100 hover:border-green-200' : 'bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100 hover:border-gray-200'"
+                @click.stop="showRadarTooltip = !showRadarTooltip"
+              >
+                <Target :size="12" class="group-hover:scale-110 transition-transform" />
+                <span class="text-[11px] font-bold">{{ activeItem.hasRadar ? '已配置雷达' : '未配置雷达' }}</span>
+              </div>
+
+              <!-- 雷达气泡说明 (通用详情) -->
+              <div v-if="showRadarTooltip" class="absolute top-full right-0 mt-2 z-[130] animate-fade-in">
+                <div class="bg-gray-900/95 backdrop-blur-xl text-white text-[11px] py-2.5 px-4 rounded-xl shadow-2xl whitespace-nowrap relative border border-white/10 ring-1 ring-black/50">
+                  <!-- 小三角 -->
+                  <div class="absolute -top-1 right-6 w-2 h-2 bg-gray-900 rotate-45 border-t border-l border-white/10"></div>
+                  配置雷达的素材，发送出去后将被封装成链接形式，支持行为追踪
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- 是否配置雷达 (通用详情) -->
-          <div class="mb-6 px-4 py-3 bg-gray-50 rounded-2xl border border-gray-100">
-            <div class="flex items-center gap-3">
-              <span class="text-[13px] font-bold text-gray-500">是否配置雷达</span>
-              <span class="px-2 py-0.5 rounded-lg text-[12px] font-black" :class="activeItem.hasRadar ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-400'">
-                {{ activeItem.hasRadar ? '是' : '否' }}
-              </span>
-            </div>
-            <p v-if="activeItem.hasRadar" class="mt-2 text-[11px] text-gray-400 leading-relaxed italic">
-              * 发送出去的素材会被封装成链接形式
-            </p>
+          <!-- 标签区域 (普通详情) -->
+          <div v-if="detailTags.length > 0" class="flex flex-wrap gap-x-3 gap-y-1.5 mb-2 px-0.5">
+            <span v-for="tag in detailTags" :key="tag" class="text-[12px] text-blue-600 font-medium">#{{ tag }}</span>
           </div>
 
           <h2 class="text-[18px] font-bold text-gray-900 leading-tight mb-4">{{ activeItem.title }}</h2>
+          
           
           <div v-if="activeItem.type === '链接' || activeItem.type === '语音' || activeItem.type === '小程序'" class="space-y-4">
             <p v-if="activeItem.description" class="text-[14px] text-gray-600 leading-relaxed mb-4 whitespace-pre-wrap">{{ activeItem.description }}</p>
@@ -556,21 +578,21 @@
           </div>
         </div>
 
-        <!-- 固定交互底栏 (按照截图调整为悬浮胶囊样式) -->
-        <div class="fixed bottom-10 right-6 bg-white rounded-[32px] shadow-[0_10px_40px_rgba(0,0,0,0.15)] border border-gray-50 px-7 py-2.5 flex items-center gap-9 z-[120] animate-fade-in">
+        <!-- 固定交互底栏 (悬浮胶囊样式：质感优化版) -->
+        <div class="fixed bottom-10 right-6 bg-white/80 backdrop-blur-xl rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.15),0_1px_1px_rgba(0,0,0,0.05)] border border-white/50 ring-1 ring-black/5 px-7 py-2.5 flex items-center gap-9 z-[120] animate-fade-in transition-transform">
           <!-- 浏览量 -->
-          <div class="flex flex-col items-center gap-0.5 text-gray-400">
-            <Eye :size="20" />
+          <div class="flex flex-col items-center gap-0.5 text-gray-600">
+            <Eye :size="20" class="drop-shadow-sm" />
             <span class="text-[11px] font-bold">{{ activeItem.viewCount }}</span>
           </div>
           <!-- 收藏 -->
-          <button class="flex flex-col items-center gap-0.5 transition-colors active:opacity-50" :class="activeItem.isFavorite ? 'text-red-500' : 'text-gray-400'" @click="handleFavoriteDetail">
-            <Star :size="20" :fill="activeItem.isFavorite ? 'currentColor' : 'none'" />
+          <button class="flex flex-col items-center gap-0.5 transition-all active:scale-90" :class="activeItem.isFavorite ? 'text-red-600' : 'text-gray-600'" @click="handleFavoriteDetail">
+            <Star :size="20" :fill="activeItem.isFavorite ? 'currentColor' : 'none'" class="drop-shadow-sm" />
             <span class="text-[11px] font-bold">{{ activeItem.favCount }}</span>
           </button>
           <!-- 分享 -->
-          <button class="flex flex-col items-center gap-0.5 text-gray-400 active:opacity-20" @click="showShareSheet = true">
-            <Share2 :size="20" />
+          <button class="flex flex-col items-center gap-0.5 text-gray-600 active:opacity-40 active:scale-90 transition-all" @click="openShare">
+            <Share2 :size="20" class="drop-shadow-sm" />
             <span class="text-[11px] font-bold">{{ activeItem.shareCount }}</span>
           </button>
         </div>
@@ -587,6 +609,14 @@
       ]"
     >
       <Star :size="20" :fill="showOnlyFavorites ? 'currentColor' : 'none'" />
+      
+      <!-- 收藏总数角标 -->
+      <div v-if="favoriteCount > 0" 
+        class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-white shadow-sm animate-fade-in"
+        :class="showOnlyFavorites ? 'bg-white text-red-600' : 'bg-red-500 text-white'"
+      >
+        {{ favoriteCount }}
+      </div>
     </button>
 
     <!-- Toast 提示 -->
@@ -605,67 +635,163 @@
           <button @click="showShareSheet = false" class="text-gray-400 p-1"><X :size="20" /></button>
         </div>
 
-        <div class="flex-1 overflow-y-auto px-6 pb-24">
-          <!-- 第一部分：当前用户 -->
-          <div class="mb-8">
-            <h4 class="text-[13px] text-gray-400 font-bold mb-4">分享给当前用户</h4>
-            <div 
-              class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl active:bg-gray-100 transition-colors"
-              @click="handleShareConfirm"
-            >
-              <img :src="currentUser.avatar" class="w-12 h-12 rounded-full border-2 border-white shadow-sm" />
-              <div class="flex-1">
-                <div class="text-[15px] font-bold text-gray-900">{{ currentUser.name }}</div>
-                <div class="text-[12px] text-gray-400 mt-0.5">微信好友</div>
+        <div v-if="activeItem" class="flex-1 overflow-y-auto px-6 pb-28 no-scrollbar">
+          <!-- 编辑素材区域 (海报类型等) -->
+          <div v-if="isEditingShare" class="py-4 space-y-6 animate-fade-in">
+            <div class="space-y-2">
+              <label class="text-[13px] font-bold text-gray-500">分享标题</label>
+              <div class="w-full px-4 py-3 bg-gray-100/50 rounded-xl border border-gray-100 text-[15px] text-gray-500 font-medium">
+                {{ editDraft.title }}
               </div>
-              <div class="px-4 py-1.5 bg-red-600 text-white text-[12px] font-bold rounded-full">发送</div>
+            </div>
+            <div class="space-y-2">
+              <label class="text-[13px] font-bold text-gray-500">
+                海报描述
+              </label>
+              <textarea 
+                v-model="editDraft.description"
+                rows="8"
+                class="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 focus:border-red-500 focus:bg-white transition-all text-[15px] outline-none resize-none"
+                placeholder="请输入海报描述"
+              ></textarea>
+            </div>
+            <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-start gap-3">
+              <div class="w-1 h-10 bg-blue-500 rounded-full shrink-0"></div>
+              <p class="text-[12px] text-blue-700 leading-relaxed font-medium">
+                温馨提示：编辑后的内容仅在本次分享中生效，不会修改原始素材。
+              </p>
             </div>
           </div>
 
-          <!-- 第二部分：其它用户清单 -->
-          <div>
-            <div class="flex items-center justify-between mb-4">
-              <h4 class="text-[13px] text-gray-400 font-bold">分享给其它用户</h4>
-              <button @click="toggleSelectAll" class="text-[13px] text-red-600 font-bold active:opacity-50">
-                {{ isAllSelected ? '取消全选' : '一键全选' }}
-              </button>
-            </div>
-
-            <div class="space-y-3">
+          <template v-else>
+            <!-- 第一部分：当前用户 -->
+            <div class="mb-8">
+              <h4 class="text-[13px] text-gray-400 font-bold mb-4">分享给当前用户</h4>
               <div 
-                v-for="cust in otherCustomers" 
-                :key="cust.id"
-                class="flex items-center gap-4 p-4 rounded-2xl border transition-all"
-                :class="selectedCustomerIds.has(cust.id) ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'"
-                @click="toggleCustomerSelection(cust.id)"
+                class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl transition-colors"
               >
-                <div 
-                  class="w-5 h-5 rounded-full border flex items-center justify-center transition-all"
-                  :class="selectedCustomerIds.has(cust.id) ? 'bg-red-600 border-red-600' : 'border-gray-300'"
-                >
-                  <Check v-if="selectedCustomerIds.has(cust.id)" :size="12" class="text-white" />
+                <img :src="currentUser.avatar" class="w-12 h-12 rounded-full border-2 border-white shadow-sm" />
+                <div class="flex-1">
+                <div class="text-[15px] font-bold text-gray-900">{{ currentUser.name }}</div>
+                <div class="text-[12px] text-gray-400 mt-0.5">当前用户</div>
+              </div>
+                <div class="flex items-center gap-2">
+                  <button 
+                    v-if="activeItem.type === '纯文本' || activeItem.type === '海报'"
+                    class="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 text-[12px] font-bold rounded-full active:scale-95 transition-all"
+                    @click="activeItem.type === '纯文本' ? (showTextEditModal = true) : (isEditingShare = true)"
+                  >
+                    编辑
+                  </button>
+                  <button 
+                    class="px-4 py-1.5 bg-red-600 text-white text-[12px] font-bold rounded-full active:scale-95 transition-all"
+                    @click="handleShareConfirm"
+                  >
+                    发送
+                  </button>
                 </div>
-                <img :src="cust.avatar" class="w-10 h-10 rounded-full" />
-                <div class="flex-1 text-[15px] font-bold text-gray-800">{{ cust.name }}</div>
               </div>
             </div>
-          </div>
+
+            <!-- 第二部分：其它用户清单 -->
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="text-[13px] text-gray-400 font-bold">分享给其它用户</h4>
+                <button @click="toggleSelectAll" class="text-[13px] text-red-600 font-bold active:opacity-50">
+                  {{ isAllSelected ? '取消全选' : '一键全选' }}
+                </button>
+              </div>
+
+              <div class="space-y-3">
+                <div 
+                  v-for="cust in otherCustomers" 
+                  :key="cust.id"
+                  class="flex items-center gap-4 p-4 rounded-2xl border transition-all"
+                  :class="selectedCustomerIds.has(cust.id) ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'"
+                  @click="toggleCustomerSelection(cust.id)"
+                >
+                  <div 
+                    class="w-5 h-5 rounded-full border flex items-center justify-center transition-all"
+                    :class="selectedCustomerIds.has(cust.id) ? 'bg-red-600 border-red-600' : 'border-gray-300'"
+                  >
+                    <Check v-if="selectedCustomerIds.has(cust.id)" :size="12" class="text-white" />
+                  </div>
+                  <img :src="cust.avatar" class="w-10 h-10 rounded-full" />
+                  <div class="flex-1 text-[15px] font-bold text-gray-800">{{ cust.name }}</div>
+                </div>
+              </div>
+            </div>
+          </template>
         </div>
 
         <!-- 固定底部操作 -->
-        <div class="absolute bottom-0 left-0 right-0 p-6 bg-white/95 backdrop-blur-lg border-t border-gray-100 flex items-center justify-between">
-          <div class="flex flex-col">
+        <div v-if="activeItem" class="absolute bottom-0 left-0 right-0 p-6 bg-white/95 backdrop-blur-lg border-t border-gray-100 flex items-center gap-4">
+          <div v-if="!isEditingShare" class="flex flex-col shrink-0">
             <span class="text-[12px] text-gray-400">已选用户</span>
             <span class="text-[15px] font-bold text-gray-900">
               <span class="text-red-600">{{ selectedCustomerIds.size }}</span> / {{ otherCustomers.length }}
             </span>
           </div>
+          <div class="flex-1 flex items-center justify-end gap-3">
+            <button 
+              v-if="!isEditingShare && (activeItem.type === '纯文本' || activeItem.type === '海报')"
+              class="px-6 h-12 rounded-xl font-bold text-[14px] border transition-all active:scale-95"
+              :class="selectedCustomerIds.size > 0 ? 'border-gray-200 text-gray-600' : 'border-gray-100 text-gray-300 pointer-events-none'"
+              @click="activeItem.type === '纯文本' ? (showTextEditModal = true) : (isEditingShare = true)"
+            >
+              编辑后再发送
+            </button>
+            <button 
+              class="px-8 h-12 rounded-xl font-bold text-[15px] transition-all flex-1 sm:flex-none"
+              :class="(selectedCustomerIds.size > 0 || isEditingShare) ? 'bg-red-600 text-white shadow-lg shadow-red-100 active:scale-[0.98]' : 'bg-gray-100 text-gray-300 pointer-events-none'"
+              @click="isEditingShare ? (isEditingShare = false) : handleShareConfirm()"
+            >
+              {{ isEditingShare ? '完成编辑' : '发送' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 文本编辑弹窗 (针对纯文本类型) -->
+    <div v-if="showTextEditModal" class="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-fade-in">
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showTextEditModal = false"></div>
+      <div class="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl animate-scale-up">
+        <div class="px-6 py-5 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+          <h3 class="text-[16px] font-bold text-gray-900">编辑文本内容</h3>
+          <button @click="showTextEditModal = false" class="text-gray-400"><X :size="18" /></button>
+        </div>
+        
+        <div class="p-6">
+          <div class="space-y-2 mb-6">
+            <label class="text-[12px] font-bold text-gray-400 uppercase tracking-wider">标题</label>
+            <div class="w-full px-4 py-3 bg-gray-100/50 rounded-xl border border-gray-100 text-[15px] font-bold text-gray-500">
+              {{ editDraft.title }}
+            </div>
+          </div>
+          <div class="space-y-2">
+            <label class="text-[12px] font-bold text-gray-400 uppercase tracking-wider">正文内容</label>
+            <textarea 
+              v-model="editDraft.description"
+              rows="10"
+              class="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 focus:border-red-500 focus:bg-white transition-all text-[14px] leading-relaxed outline-none resize-none"
+              placeholder="请输入文本内容..."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="px-6 py-5 bg-gray-50/50 border-t border-gray-50 flex items-center gap-3">
           <button 
-            class="px-8 h-12 rounded-xl font-bold text-[15px] transition-all"
-            :class="selectedCustomerIds.size > 0 ? 'bg-red-600 text-white shadow-lg shadow-red-100 active:scale-[0.98]' : 'bg-gray-100 text-gray-300 pointer-events-none'"
-            @click="handleShareConfirm"
+            @click="showTextEditModal = false"
+            class="flex-1 h-12 rounded-2xl font-bold text-[15px] text-gray-500 bg-white border border-gray-200 active:scale-95 transition-all"
           >
-            确认分享
+            取消
+          </button>
+          <button 
+            @click="handleShareConfirm"
+            class="flex-1 h-12 rounded-2xl font-bold text-[15px] text-white bg-red-600 shadow-lg shadow-red-100 active:scale-95 transition-all"
+          >
+            发送
           </button>
         </div>
       </div>
@@ -676,7 +802,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, inject } from 'vue';
 import { useRouter } from 'vue-router';
-import { ChevronLeft, Eye, Filter, Play, Search, Share2, Star, X, Layers, FolderSearch, FileText, Link, File, BookOpen, Smartphone, Mic, Image, Check } from 'lucide-vue-next';
+import { ChevronLeft, Eye, Filter, Play, Search, Share2, Star, X, Layers, FolderSearch, FileText, Link, File, BookOpen, Smartphone, Mic, Image, Check, Info, Target, Type } from 'lucide-vue-next';
 
 type ContentType = '图片' | '纯文本' | '视频' | '文件' | '链接' | '文章' | '小程序' | '语音' | '海报';
 type SortMode = '最新发布' | '最多浏览' | '最多收藏';
@@ -724,9 +850,36 @@ const showOnlyFavorites = ref(false);
 const toastMessage = ref('');
 const showToast = ref(false);
 const showShareSheet = ref(false);
+const showTextEditModal = ref(false);
+const isEditingShare = ref(false);
+const editDraft = ref({ title: '', description: '' });
 const isVideoPlaying = ref(false);
 const isVideoLoading = ref(false);
 const videoPlayer = ref<HTMLVideoElement | null>(null);
+const showRadarTooltip = ref(false);
+
+const favoriteCount = computed(() => {
+  return items.value.filter(i => i.isFavorite).length;
+});
+
+const typeCounts = computed(() => {
+  const counts: Record<string, number> = { '全部': items.value.length };
+  items.value.forEach(item => {
+    counts[item.type] = (counts[item.type] || 0) + 1;
+  });
+  return counts;
+});
+
+const detailTags = computed(() => {
+  if (!activeItem.value) return [];
+  const item = activeItem.value;
+  const tags: string[] = [item.type];
+  if (item.business && item.business !== '全部') tags.push(item.business);
+  if (item.scenario && item.scenario !== '全部') tags.push(item.scenario);
+  if (item.series && item.series !== '全部') tags.push(item.series);
+  if (item.model && item.model !== '全部') tags.push(item.model);
+  return tags;
+});
 
 const handleVideoError = (e: any) => {
   console.error('Video load failed:', e);
@@ -777,7 +930,7 @@ interface Customer {
 
 const currentUser: Customer = {
   id: 'cur-001',
-  name: '张三 (当前用户)',
+  name: '张三',
   avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&h=100&q=80'
 };
 
@@ -1199,54 +1352,42 @@ const openDetail = (id: string) => {
   // 根据不同类型更新右侧需求原型说明
   if (updateRequirementLogic && activeItem.value) {
     const type = activeItem.value.type;
-    const radarLogic = activeItem.value.hasRadar 
-      ? '该素材已配置雷达：发送出的素材将被封装成链接形式，支持行为追踪。' 
-      : '该素材未配置雷达。';
 
     if (type === '文章') {
       updateRequirementLogic([
-        '字段映射：文章类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【文章正文】。',
-        radarLogic
+        '字段映射：文章类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【文章正文】。'
       ]);
     } else if (type === '视频') {
       updateRequirementLogic([
-        '字段映射：视频类型素材，封面图对应后台上传的【封面图】，标题对应后台配置的【标题】，内容对应后台配置的【描述】。',
-        radarLogic
+        '字段映射：视频类型素材，封面图对应后台上传的【封面图】，标题对应后台配置的【标题】，内容对应后台配置的【描述】。'
       ]);
     } else if (type === '海报') {
       updateRequirementLogic([
-        '字段映射：海报类型素材，封面图对应后台【上传图片】，标题对应后台【标题】，内容对应后台【描述】。',
-        radarLogic
+        '字段映射：海报类型素材，封面图对应后台【上传图片】，标题对应后台【标题】，内容对应后台【描述】。'
       ]);
     } else if (type === '纯文本') {
       updateRequirementLogic([
-        '字段映射：纯文本类型素材，标题对应后台【标题】，内容对应后台【文本内容】。',
-        radarLogic
+        '字段映射：纯文本类型素材，标题对应后台【标题】，内容对应后台【文本内容】。'
       ]);
     } else if (type === '图片') {
       updateRequirementLogic([
-        '字段映射：图片类型素材，封面图对应后台【上传图片】，标题对应后台【标题】，内容对应后台【描述】。',
-        radarLogic
+        '字段映射：图片类型素材，封面图对应后台【上传图片】，标题对应后台【标题】，内容对应后台【描述】。'
       ]);
     } else if (type === '文件') {
       updateRequirementLogic([
-        '字段映射：文件类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【描述】。',
-        radarLogic
+        '字段映射：文件类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【描述】。'
       ]);
     } else if (type === '语音') {
       updateRequirementLogic([
-        '字段映射：语音类型素材，标题对应后台配置的【语音标题】，内容对应后台配置的【无】。',
-        radarLogic
+        '字段映射：语音类型素材，标题对应后台配置的【语音标题】，内容对应后台配置的【无】。'
       ]);
     } else if (type === '小程序') {
       updateRequirementLogic([
-        '字段映射：小程序类型素材，封面图对应后台【卡片图片】，标题对应后台【标题】，内容对应后台【小程序Appid】和【小程序路径】。',
-        radarLogic
+        '字段映射：小程序类型素材，封面图对应后台【卡片图片】，标题对应后台【标题】，内容对应后台【小程序Appid】和【小程序路径】。'
       ]);
     } else if (type === '链接') {
       updateRequirementLogic([
-        '字段映射：链接类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【描述】，链接地址对应后台【链接地址】。',
-        radarLogic
+        '字段映射：链接类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【描述】，链接地址对应后台【链接地址】。'
       ]);
     } else {
       updateRequirementLogic([]);
@@ -1281,6 +1422,16 @@ const triggerToast = (msg: string) => {
   }, 2000);
 };
 
+const openShare = () => {
+  if (!activeItem.value) return;
+  editDraft.value = {
+    title: activeItem.value.title,
+    description: activeItem.value.description || ''
+  };
+  isEditingShare.value = false;
+  showShareSheet.value = true;
+};
+
 const handleFavoriteDetail = () => {
   if (!activeItem.value) return;
   
@@ -1297,9 +1448,17 @@ const handleFavoriteDetail = () => {
 
 const handleShareConfirm = () => {
   if (!activeItem.value) return;
-  activeItem.value.shareCount++;
+  
+  const count = selectedCustomerIds.value.size || 1;
+  const isEdited = editDraft.value.title !== activeItem.value.title || editDraft.value.description !== (activeItem.value.description || '');
+  
+  activeItem.value.shareCount += count;
   showShareSheet.value = false;
-  triggerToast('分享成功');
+  showTextEditModal.value = false;
+  selectedCustomerIds.value.clear();
+  isEditingShare.value = false;
+  
+  triggerToast(`成功分享 ${count} 位好友${isEdited ? ' (已包含编辑内容)' : ''}`);
 };
 
 const toggleFavorites = () => {
@@ -1321,7 +1480,7 @@ const getCoverUrl = (item: ContentItem) => {
 const contentTypeIcon = (type: ContentType) => {
   switch (type) {
     case '图片': return Image;
-    case '纯文本': return FileText;
+    case '纯文本': return Type;
     case '视频': return Play;
     case '文件': return File;
     case '链接': return Link;

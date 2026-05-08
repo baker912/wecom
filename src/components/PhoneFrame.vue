@@ -41,15 +41,15 @@ const requirementInfoMap: Record<string, { title: string; subtitle: string; fold
       '内容详情：点击卡片查看详情，支持视频播放与互动入口。'
     ],
     table: [
-      { type: '文章', title: '【标题】', cover: '【封面图】', content: '【文章正文】', radar: '是', other: '-' },
-      { type: '海报', title: '【标题】', cover: '【上传图片】', content: '【描述】', radar: '是', other: '-' },
-      { type: '图片', title: '【标题】', cover: '【上传图片】', content: '【描述】', radar: '是', other: '-' },
-      { type: '视频', title: '【标题】', cover: '【封面图】', content: '【描述】', radar: '是', other: '【视频文件】' },
-      { type: '文件', title: '【标题】', cover: '【封面图】', content: '【描述】', radar: '否', other: '【附件】' },
-      { type: '链接', title: '【标题】', cover: '【封面图】', content: '【描述】', radar: '是', other: '【URL地址】' },
-      { type: '小程序', title: '【标题】', cover: '【卡片图片】', content: '-', radar: '否', other: '【AppID/路径】' },
-      { type: '纯文本', title: '【标题】', cover: '-', content: '【文本内容】', radar: '否', other: '-' },
-      { type: '语音', title: '【语音标题】', cover: '-', content: '-', radar: '否', other: '【音频文件】' }
+      { type: '文章', title: '【标题】', cover: '【封面图】', content: '【文章正文】', other: '-' },
+      { type: '海报', title: '【标题】', cover: '【上传图片】', content: '【描述】', other: '-' },
+      { type: '图片', title: '【标题】', cover: '【上传图片】', content: '【描述】', other: '-' },
+      { type: '视频', title: '【标题】', cover: '【封面图】', content: '【描述】', other: '【视频文件】' },
+      { type: '文件', title: '【标题】', cover: '【封面图】', content: '【描述】', other: '【附件】' },
+      { type: '链接', title: '【标题】', cover: '【封面图】', content: '【描述】', other: '【URL地址】' },
+      { type: '小程序', title: '【标题】', cover: '【卡片图片】', content: '-', other: '【AppID/路径】' },
+      { type: '纯文本', title: '【标题】', cover: '-', content: '【文本内容】', other: '-' },
+      { type: '语音', title: '【语音标题】', cover: '-', content: '-', other: '【音频文件】' }
     ]
   },
   '/customer-profile': {
@@ -178,7 +178,6 @@ const currentTime = computed(() => {
                         <th class="px-4 py-2.5 text-[12px] font-bold text-gray-900 whitespace-nowrap border-r border-gray-50">素材类型</th>
                         <th class="px-4 py-2.5 text-[12px] font-bold text-gray-900 whitespace-nowrap border-r border-gray-50">封面图</th>
                         <th class="px-4 py-2.5 text-[12px] font-bold text-gray-900 whitespace-nowrap border-r border-gray-50">内容</th>
-                        <th class="px-4 py-2.5 text-[12px] font-bold text-gray-900 whitespace-nowrap border-r border-gray-50">雷达配置</th>
                         <th class="px-4 py-2.5 text-[12px] font-bold text-gray-900 whitespace-nowrap">补充内容</th>
                       </tr>
                     </thead>
@@ -197,10 +196,6 @@ const currentTime = computed(() => {
                         </td>
                         <td class="px-4 py-2 text-[12px] text-black font-bold whitespace-nowrap border-r border-gray-50">
                           <span v-if="row.content !== '-'" class="px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100/50">{{ row.content }}</span>
-                          <span v-else class="text-blue-600/40 font-bold">-</span>
-                        </td>
-                        <td class="px-4 py-2 text-[12px] text-black font-bold whitespace-nowrap border-r border-gray-50">
-                          <span v-if="row.radar === '是'" class="px-2 py-0.5 rounded bg-green-50 text-green-600 border border-green-100/50">已配置</span>
                           <span v-else class="text-blue-600/40 font-bold">-</span>
                         </td>
                         <td class="px-4 py-2 text-[12px] text-black font-bold whitespace-nowrap">
