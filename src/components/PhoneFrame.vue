@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
 import { computed, ref, provide } from 'vue';
-import { Home, Wifi, Signal, Info, Target, Layout, Database, Download, Filter, ArrowUpDown, CheckCircle2, XCircle, Image, FileText } from 'lucide-vue-next';
+import { Home, Wifi, Signal, Info, Target, Layout } from 'lucide-vue-next';
 import PrototypeCodeLocation from './PrototypeCodeLocation.vue';
 
 const route = useRoute();

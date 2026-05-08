@@ -647,9 +647,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, inject, nextTick, onMounted } from 'vue';
+import { computed, ref, watch, inject } from 'vue';
 import { useRouter } from 'vue-router';
-import { ChevronLeft, ChevronDown, ChevronUp, Eye, Filter, Play, Search, Share2, Star, X, Layers, MessageSquare, Download, FolderSearch, FileText, Link, File, BookOpen, Smartphone, Mic, Image, Check } from 'lucide-vue-next';
+import { ChevronLeft, Eye, Filter, Play, Search, Share2, Star, X, Layers, FolderSearch, FileText, Link, File, BookOpen, Smartphone, Mic, Image, Check } from 'lucide-vue-next';
 
 type ContentType = '图片' | '纯文本' | '视频' | '文件' | '链接' | '文章' | '小程序' | '语音' | '海报';
 type SortMode = '最新发布' | '最多浏览' | '最多收藏';
@@ -798,19 +798,6 @@ const toggleCustomerSelection = (id: string) => {
 | 小程序 | 有 | 有 | 有 (描述) | AppID, 页面路径 |
 | 链接 | 有 | 有 | 有 (描述) | 链接地址 (URL) |
 */
-
-// 素材类型字段映射注释说明
-const typeAnnotations: Record<ContentType, Record<string, string>> = {
-  '文章': { '标题': '后台配置的【标题】', '内容': '后台配置的【文章正文】' },
-  '图片': { '封面图': '后台上传的【上传图片】', '标题': '后台配置的【标题】', '内容': '后台配置的【描述】' },
-  '纯文本': { '标题': '后台配置的【标题】', '内容': '后台配置的【文本内容】' },
-    '视频': { '标题': '后台配置的【标题】', '内容': '后台配置的【视频描述】' },
-    '文件': { '标题': '后台配置的【标题】', '内容': '后台配置的【描述】' },
-    '链接': { '标题': '后台配置的【标题】', '内容': '后台配置的【描述】', '链接地址': '后台配置的【链接地址】' },
-    '小程序': { '标题': '后台配置的【标题】', '内容': '后台配置的【小程序Appid】和【小程序路径】' },
-    '语音': { '标题': '后台配置的【语音标题】', '内容': '无' },
-    '海报': { '标题': '后台配置的【海报主题】', '内容': '后台配置的【海报营销文案】' }
-  };
 
 const filterApplied = ref({
   business: '全部',
@@ -1129,16 +1116,6 @@ const applyFilter = () => {
   sortMode.value = sortDraft.value;
   closeFilter();
   simulateLoading();
-};
-
-const isSelected = (group: string, opt: string) => {
-  if (group === '所属业务') return filterDraft.value.business === opt;
-  if (group === '所属场景') return filterDraft.value.scenario === opt;
-  if (group === '所属车系') return filterDraft.value.series === opt;
-  if (group === '所属车型') return filterDraft.value.model === opt;
-  if (group === '内容创作者') return filterDraft.value.creator === opt;
-  if (group === '内容类型') return filterDraft.value.contentType === opt;
-  return false;
 };
 
 const handleFilterClick = (group: string, opt: string) => {
