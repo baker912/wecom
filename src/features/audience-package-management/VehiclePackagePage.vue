@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import PrototypeCodeLocation from '../../components/PrototypeCodeLocation.vue';
-import { BarChart2, Briefcase, CalendarDays, ChevronDown, ChevronLeft, LayoutGrid, MessageCircle, MessageSquare, Monitor, Plus, Search, Settings, User, Users } from 'lucide-vue-next';
+import { BarChart2, Briefcase, CalendarDays, ChevronDown, ChevronLeft, LayoutGrid, MessageCircle, MessageSquare, Monitor, Plus, Search, Settings, User, Users, History } from 'lucide-vue-next';
 
 const router = useRouter();
 const activeMenu = ref('车辆包');
