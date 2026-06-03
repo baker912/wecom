@@ -851,9 +851,6 @@ const handleSave = () => {
                       </option>
                     </select>
                   </div>
-                  <div v-if="selectedVehiclePackage" class="text-xs text-gray-500">
-                    覆盖车辆数：<span class="font-bold text-gray-800">{{ selectedVehiclePackage.vehicleCount }}</span>
-                  </div>
                 </div>
                 <div v-if="showVinError" class="text-xs text-[#e53935]">
                   请选择一个有效的车群包
