@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import PrototypeCodeLocation from '../../components/PrototypeCodeLocation.vue';
 import RuleGroup from './RuleGroup.vue';
-import { BarChart2, Briefcase, ChevronDown, ChevronLeft, FileDown, LayoutGrid, MessageCircle, MessageSquare, Monitor, Plus, Settings, Trash2, Upload, User, Users, X, Loader2, AlertCircle, CheckCircle2, HelpCircle } from 'lucide-vue-next';
+import { BarChart2, Briefcase, ChevronDown, ChevronLeft, LayoutGrid, MessageCircle, MessageSquare, Monitor, Plus, Settings, Trash2, User, Users, X, Loader2, AlertCircle, CheckCircle2, HelpCircle } from 'lucide-vue-next';
 
 const router = useRouter();
 const route = useRoute();
@@ -432,23 +432,7 @@ onBeforeUnmount(() => {
   layer1ResizeObserver = null;
 });
 
-const showUploadModal = ref(false);
-const selectedFileName = ref<string | null>(null);
 const submitAttempted = ref(false);
-
-const openUpload = () => {
-  showUploadModal.value = true;
-};
-
-const closeUpload = () => {
-  showUploadModal.value = false;
-};
-
-const handleFileChange = (event: Event) => {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  selectedFileName.value = file?.name || null;
-};
 
 const hasValidRelations = computed(() => {
   const { newCar, owner, lastRepair, latestEPOwner } = form.value.relations;

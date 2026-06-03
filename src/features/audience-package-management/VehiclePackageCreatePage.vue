@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import PrototypeCodeLocation from '../../components/PrototypeCodeLocation.vue';
-import { BarChart2, Briefcase, ChevronDown, ChevronLeft, LayoutGrid, MessageCircle, MessageSquare, Monitor, Plus, Settings, User, Users, Upload, X, FileDown, HelpCircle, Loader2, CheckCircle2, AlertCircle } from 'lucide-vue-next';
+import { BarChart2, Briefcase, ChevronDown, ChevronLeft, LayoutGrid, MessageSquare, Monitor, Settings, User, Users, Upload, X, FileDown, HelpCircle, Loader2, CheckCircle2 } from 'lucide-vue-next';
 
 const router = useRouter();
 const activeMenu = ref('车辆包');
@@ -85,7 +85,6 @@ const handleFileChange = (event: Event) => {
 };
 
 // 数量计算相关
-const calculatingQuantity = ref(false);
 const calculationResult = ref<number | null>(null);
 const calculationStatus = ref<'none' | 'success' | 'error'>('none');
 const isCalculationDirty = ref(true);

@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import PrototypeCodeLocation from '../../components/PrototypeCodeLocation.vue';
 import { BarChart2, Briefcase, ChevronDown, ChevronLeft, LayoutGrid, MessageCircle, MessageSquare, Monitor, Search, Settings, User, Users, Download, ArrowLeft } from 'lucide-vue-next';
 
 const router = useRouter();
-const route = useRoute();
 const activeMenu = ref('车辆包');
 const expandedMenu = ref('运营工具');
 
