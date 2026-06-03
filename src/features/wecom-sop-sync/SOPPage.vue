@@ -42,7 +42,7 @@ const menuItems = [
   { 
     icon: Briefcase, 
     label: '运营工具',
-    subItems: ['客户欢迎语', '消息群发', '客户朋友圈', '标签拉群', '个人SOP']
+    subItems: ['客户欢迎语', '消息群发', '客户朋友圈', '标签拉群', '个人SOP', '人群包', '车辆包']
   },
   { icon: BarChart2, label: 'BI看板' },
   { icon: LayoutGrid, label: '管理中心' },
@@ -70,6 +70,13 @@ const handleMenuClick = (item: typeof menuItems[0]) => {
   } else {
     activeMenu.value = item.label;
   }
+};
+
+const handleSubMenuClick = (subItem: string) => {
+  activeMenu.value = subItem;
+  if (subItem === '个人SOP') router.push('/features/wecom-sop-sync');
+  if (subItem === '人群包') router.push('/features/audience-package');
+  if (subItem === '车辆包') router.push('/features/vehicle-package');
 };
 </script>
 
@@ -119,7 +126,7 @@ const handleMenuClick = (item: typeof menuItems[0]) => {
                   ? 'bg-[#e53935] text-white' 
                   : 'hover:text-white hover:bg-[#333]'
               }`"
-              @click="activeMenu = subItem"
+              @click="handleSubMenuClick(subItem)"
             >
               {{ subItem }}
             </div>

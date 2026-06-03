@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { Plus, Trash2 } from 'lucide-vue-next';
+import { ChevronDown, Plus, Trash2 } from 'lucide-vue-next';
 
 defineOptions({ name: 'RuleGroup' });
 
@@ -62,6 +62,37 @@ const bodyClasses = computed(() => {
   if (props.isRoot) return props.hideRootControls ? 'mt-4 space-y-4' : 'mt-3 space-y-4';
   return 'p-3 space-y-2';
 });
+
+const labelValueOptions: Record<string, string[]> = {
+  'tag:性别': ['男', '女', '未知'],
+  'tag:车系': ['A3', 'A4L', 'A6L', 'Q3', 'Q5L', 'Q7', 'Q8', 'e-tron'],
+  'tag:动力类型': ['燃油', '插混', '纯电'],
+  'tag:行驶里程': ['0-1万', '1-3万', '3-5万', '5-8万', '8-12万', '12万以上'],
+  'tag:维修偏好': ['常规保养', '事故维修', '美容改装', '质保维修'],
+  'tag:意向车型': ['A4L', 'A6L', 'Q5L'],
+  'tag:意向级别': ['H', 'A', 'B', 'C', 'D']
+};
+
+const getLabelValueOptions = (fieldKey: string) => {
+  return labelValueOptions[fieldKey] || ['选项A', '选项B', '选项C'];
+};
+
+const toggleLabelValue = (condition: RuleCondition, val: string) => {
+  let current = condition.value ? condition.value.split(',') : [];
+  if (current.includes(val)) {
+    current = current.filter(v => v !== val);
+  } else {
+    current.push(val);
+  }
+  condition.value = current.join(',');
+};
+
+const isLabelValueSelected = (condition: RuleCondition, val: string) => {
+  const current = condition.value ? condition.value.split(',') : [];
+  return current.includes(val);
+};
+
+const showValueDropdown = ref<Record<string, boolean>>({});
 
 const isRootOrMultiGroups = computed(() => {
   return !!props.isRoot && props.group.op === 'OR' && props.group.children.filter(c => c.type === 'group').length > 1;
@@ -220,11 +251,43 @@ const getGroupIndexAt = (index: number) => {
 
           <div class="w-40 h-10 px-3 border border-gray-300 rounded flex items-center bg-white">
             <select v-model="child.operator" :disabled="readonly" class="w-full bg-transparent outline-none text-sm text-gray-700 disabled:text-gray-500">
-              <option v-for="opt in operatorOptions" :key="opt" :value="opt">{{ opt }}</option>
+              <option v-for="opt in ['等于', '不等于']" :key="opt" :value="opt">{{ opt }}</option>
             </select>
           </div>
 
-          <input v-model="child.value" :disabled="readonly" type="text" placeholder="请输入" class="flex-1 h-10 px-3 border border-gray-300 rounded focus:border-red-500 focus:outline-none bg-white disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed" />
+          <div class="flex-1 relative">
+            <div 
+              class="w-full h-10 px-3 border border-gray-300 rounded flex items-center bg-white cursor-pointer justify-between"
+              :class="readonly ? 'bg-gray-50 cursor-not-allowed' : ''"
+              @click="!readonly && (showValueDropdown[child.id] = !showValueDropdown[child.id])"
+            >
+              <div class="text-sm truncate text-gray-700">
+                {{ child.value || '请选择' }}
+              </div>
+              <ChevronDown :size="14" class="text-gray-400" />
+            </div>
+
+            <div v-if="showValueDropdown[child.id] && !readonly" class="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded shadow-xl max-h-48 overflow-y-auto p-2 space-y-1">
+              <label 
+                v-for="opt in getLabelValueOptions(child.fieldKey)" 
+                :key="opt"
+                class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer"
+              >
+                <input 
+                  type="checkbox" 
+                  :checked="isLabelValueSelected(child, opt)"
+                  @change="toggleLabelValue(child, opt)"
+                  class="rounded border-gray-300 text-[#e53935] focus:ring-[#e53935] accent-[#e53935]"
+                />
+                <span class="text-sm text-gray-700">{{ opt }}</span>
+              </label>
+              <div class="pt-2 border-t border-gray-100 flex justify-end">
+                <button @click="showValueDropdown[child.id] = false" class="text-[11px] font-bold text-[#e53935] hover:underline">
+                  完成
+                </button>
+              </div>
+            </div>
+          </div>
 
           <button v-if="!readonly" type="button" @click="onRemoveNode(group.id, child.id)" class="h-10 w-10 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 transition-colors text-gray-800">
             <Trash2 :size="16" />

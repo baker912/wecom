@@ -67,7 +67,7 @@ type DetailData = {
   createdAt: string;
   status: string;
   vinFileName?: string;
-  relations: { newCar: boolean; owner: boolean; lastService: boolean };
+  relations: { newCar: boolean; owner: boolean };
   ruleTree: RuleGroupNode;
 };
 
@@ -92,7 +92,6 @@ const relationText = computed(() => {
   const parts: string[] = [];
   if (d.relations.newCar) parts.push('APP绑车人');
   if (d.relations.owner) parts.push('购车车主');
-  if (d.relations.lastService) parts.push('最近一次维修人');
   return parts.join('、');
 });
 
@@ -128,7 +127,7 @@ onMounted(() => {
           createdAt: parsed.createdAt,
           status: parsed.status,
           vinFileName: parsed.createMode === '导入车辆VIN码' ? `${parsed.id}.xlsx` : undefined,
-          relations: { newCar: true, owner: true, lastService: true },
+          relations: { newCar: true, owner: true },
           ruleTree: baseRuleTree
         };
         return;
@@ -146,7 +145,7 @@ onMounted(() => {
     dept: '-',
     createdAt: '-',
     status: '-',
-    relations: { newCar: true, owner: true, lastService: true },
+    relations: { newCar: true, owner: true },
     ruleTree: {
       id: 'root',
       type: 'group',

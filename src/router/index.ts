@@ -10,6 +10,9 @@ import VINProfilePage from '../features/vin-tags-aggregation/VINProfilePage.vue'
 import AIProfilePage from '../features/ai-analysis/AIProfilePage.vue'
 import SOPPage from '../features/wecom-sop-sync/SOPPage.vue'
 import AudiencePackagePage from '../features/audience-package-management/AudiencePackagePage.vue'
+import VehiclePackagePage from '../features/audience-package-management/VehiclePackagePage.vue'
+import VehiclePackageDetailPage from '../features/audience-package-management/VehiclePackageDetailPage.vue'
+import VehiclePackageCreatePage from '../features/audience-package-management/VehiclePackageCreatePage.vue'
 import AudiencePackageCreatePage from '../features/audience-package-management/AudiencePackageCreatePage.vue'
 import AudiencePackageDetailPage from '../features/audience-package-management/AudiencePackageDetailPage.vue'
 import PersonalSOPCreatePage from '../features/personal-sop/PersonalSOPCreatePage.vue'
@@ -53,6 +56,21 @@ const router = createRouter({
       path: '/features/audience-package',
       name: 'audience-package',
       component: AudiencePackagePage
+    },
+    {
+      path: '/features/vehicle-package',
+      name: 'vehicle-package',
+      component: VehiclePackagePage
+    },
+    {
+      path: '/features/vehicle-package/create',
+      name: 'vehicle-package-create',
+      component: VehiclePackageCreatePage
+    },
+    {
+      path: '/features/vehicle-package/:id/detail',
+      name: 'vehicle-package-detail',
+      component: VehiclePackageDetailPage
     },
     {
       path: '/features/audience-package/new',

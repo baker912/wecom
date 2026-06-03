@@ -424,7 +424,7 @@
                   <div class="bg-slate-900/95 backdrop-blur-xl text-white text-[11px] py-2.5 px-4 rounded-xl shadow-2xl whitespace-nowrap relative border border-white/10 ring-1 ring-black/50">
                     <!-- 小三角 -->
                     <div class="absolute -bottom-1 left-6 w-2 h-2 bg-slate-900 rotate-45 border-r border-b border-white/10"></div>
-                    配置雷达的素材，发送出去后将被封装成链接形式，支持行为追踪
+                    {{ activeItem.hasRadar ? '将以小程序卡片形式发送，支持行为跟踪' : '请前往后台进行雷达配置；' }}
                   </div>
                 </div>
               </div>
@@ -479,7 +479,7 @@
                 <div class="bg-gray-900/95 backdrop-blur-xl text-white text-[11px] py-2.5 px-4 rounded-xl shadow-2xl whitespace-nowrap relative border border-white/10 ring-1 ring-black/50">
                   <!-- 小三角 -->
                   <div class="absolute -top-1 right-6 w-2 h-2 bg-gray-900 rotate-45 border-t border-l border-white/10"></div>
-                  配置雷达的素材，发送出去后将被封装成链接形式，支持行为追踪
+                  {{ activeItem.hasRadar ? '将以小程序卡片形式发送，支持行为跟踪' : '请前往后台进行雷达配置；' }}
                 </div>
               </div>
             </div>
@@ -631,7 +631,13 @@
         <div class="shrink-0 w-12 h-1.5 bg-gray-200 rounded-full mx-auto my-4"></div>
         
         <div class="px-6 flex items-center justify-between mb-4">
-          <h3 class="text-[18px] font-bold text-gray-900">分享素材</h3>
+          <div class="flex items-center gap-2">
+            <h3 class="text-[18px] font-bold text-gray-900">分享素材</h3>
+            <div v-if="activeItem?.hasRadar" class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-600 border border-green-100 animate-fade-in">
+              <Smartphone :size="10" />
+              <span class="text-[10px] font-bold">小程序承载</span>
+            </div>
+          </div>
           <button @click="showShareSheet = false" class="text-gray-400 p-1"><X :size="20" /></button>
         </div>
 
@@ -672,7 +678,10 @@
               >
                 <img :src="currentUser.avatar" class="w-12 h-12 rounded-full border-2 border-white shadow-sm" />
                 <div class="flex-1">
-                <div class="text-[15px] font-bold text-gray-900">{{ currentUser.name }}</div>
+                <div class="flex items-center gap-2">
+                  <div class="text-[15px] font-bold text-gray-900">{{ currentUser.name }}</div>
+                  <div v-if="activeItem.hasRadar" class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 text-[9px] font-black uppercase">Mini Program</div>
+                </div>
                 <div class="text-[12px] text-gray-400 mt-0.5">当前用户</div>
               </div>
                 <div class="flex items-center gap-2">
@@ -1355,39 +1364,48 @@ const openDetail = (id: string) => {
 
     if (type === '文章') {
       updateRequirementLogic([
-        '字段映射：文章类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【文章正文】。'
+        '字段映射：文章类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【文章正文】。',
+        activeItem.value.hasRadar ? '交付说明：该素材已配置雷达，发送给用户时将封装为小程序卡片，用户点击后进入小程序查看，支持全链路行为追踪。' : '交付说明：该素材未配置雷达，发送给用户时以原生消息形式发送。'
       ]);
     } else if (type === '视频') {
       updateRequirementLogic([
-        '字段映射：视频类型素材，封面图对应后台上传的【封面图】，标题对应后台配置的【标题】，内容对应后台配置的【描述】。'
+        '字段映射：视频类型素材，封面图对应后台上传的【封面图】，标题对应后台配置的【标题】，内容对应后台配置的【描述】。',
+        activeItem.value.hasRadar ? '交付说明：该素材已配置雷达，发送给用户时将封装为小程序卡片，用户点击后进入小程序查看，支持全链路行为追踪。' : '交付说明：该素材未配置雷达，发送给用户时以原生消息形式发送。'
       ]);
     } else if (type === '海报') {
       updateRequirementLogic([
-        '字段映射：海报类型素材，封面图对应后台【上传图片】，标题对应后台【标题】，内容对应后台【描述】。'
+        '字段映射：海报类型素材，封面图对应后台【上传图片】，标题对应后台【标题】，内容对应后台【描述】。',
+        activeItem.value.hasRadar ? '交付说明：该素材已配置雷达，发送给用户时将封装为小程序卡片，用户点击后进入小程序查看，支持全链路行为追踪。' : '交付说明：该素材未配置雷达，发送给用户时以原生消息形式发送。'
       ]);
     } else if (type === '纯文本') {
       updateRequirementLogic([
-        '字段映射：纯文本类型素材，标题对应后台【标题】，内容对应后台【文本内容】。'
+        '字段映射：纯文本类型素材，标题对应后台【标题】，内容对应后台【文本内容】。',
+        activeItem.value.hasRadar ? '交付说明：该素材已配置雷达，发送给用户时将封装为小程序卡片，用户点击后进入小程序查看，支持全链路行为追踪。' : '交付说明：该素材未配置雷达，发送给用户时以原生消息形式发送。'
       ]);
     } else if (type === '图片') {
       updateRequirementLogic([
-        '字段映射：图片类型素材，封面图对应后台【上传图片】，标题对应后台【标题】，内容对应后台【描述】。'
+        '字段映射：图片类型素材，封面图对应后台【上传图片】，标题对应后台【标题】，内容对应后台【描述】。',
+        activeItem.value.hasRadar ? '交付说明：该素材已配置雷达，发送给用户时将封装为小程序卡片，用户点击后进入小程序查看，支持全链路行为追踪。' : '交付说明：该素材未配置雷达，发送给用户时以原生消息形式发送。'
       ]);
     } else if (type === '文件') {
       updateRequirementLogic([
-        '字段映射：文件类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【描述】。'
+        '字段映射：文件类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【描述】。',
+        activeItem.value.hasRadar ? '交付说明：该素材已配置雷达，发送给用户时将封装为小程序卡片，用户点击后进入小程序查看，支持全链路行为追踪。' : '交付说明：该素材未配置雷达，发送给用户时以原生消息形式发送。'
       ]);
     } else if (type === '语音') {
       updateRequirementLogic([
-        '字段映射：语音类型素材，标题对应后台配置的【语音标题】，内容对应后台配置的【无】。'
+        '字段映射：语音类型素材，标题对应后台配置的【语音标题】，内容对应后台配置的【无】。',
+        activeItem.value.hasRadar ? '交付说明：该素材已配置雷达，发送给用户时将封装为小程序卡片，用户点击后进入小程序查看，支持全链路行为追踪。' : '交付说明：该素材未配置雷达，发送给用户时以原生消息形式发送。'
       ]);
     } else if (type === '小程序') {
       updateRequirementLogic([
-        '字段映射：小程序类型素材，封面图对应后台【卡片图片】，标题对应后台【标题】，内容对应后台【小程序Appid】和【小程序路径】。'
+        '字段映射：小程序类型素材，封面图对应后台【卡片图片】，标题对应后台【标题】，内容对应后台【小程序Appid】和【小程序路径】。',
+        '交付说明：小程序类型素材默认承载于小程序内，支持行为追踪。'
       ]);
     } else if (type === '链接') {
       updateRequirementLogic([
-        '字段映射：链接类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【描述】，链接地址对应后台【链接地址】。'
+        '字段映射：链接类型素材，封面图对应后台【封面图】，标题对应后台【标题】，内容对应后台【描述】，链接地址对应后台【链接地址】。',
+        activeItem.value.hasRadar ? '交付说明：该素材已配置雷达，发送给用户时将封装为小程序卡片，用户点击后进入小程序查看，支持全链路行为追踪。' : '交付说明：该素材未配置雷达，发送给用户时以原生消息形式发送。'
       ]);
     } else {
       updateRequirementLogic([]);

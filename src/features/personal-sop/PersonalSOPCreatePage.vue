@@ -17,7 +17,7 @@ const menuItems = [
   { 
     icon: Briefcase, 
     label: '运营工具',
-    subItems: ['客户欢迎语', '消息群发', '客户朋友圈', '标签拉群', '个人SOP', '人群包']
+    subItems: ['客户欢迎语', '消息群发', '客户朋友圈', '标签拉群', '个人SOP', '人群包', '车辆包']
   },
   { icon: BarChart2, label: 'BI看板' },
   { icon: LayoutGrid, label: '管理中心' },
@@ -33,7 +33,9 @@ const handleMenuClick = (item: typeof menuItems[0]) => {
 
 const handleSubMenuClick = (subItem: string) => {
   activeMenu.value = subItem;
+  if (subItem === '个人SOP') router.push('/features/personal-sop/new');
   if (subItem === '人群包') router.push('/features/audience-package');
+  if (subItem === '车辆包') router.push('/features/vehicle-package');
 };
 
 const form = ref({

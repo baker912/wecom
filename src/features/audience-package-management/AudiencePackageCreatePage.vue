@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import PrototypeCodeLocation from '../../components/PrototypeCodeLocation.vue';
 import RuleGroup from './RuleGroup.vue';
-import { BarChart2, Briefcase, ChevronDown, ChevronLeft, FileDown, LayoutGrid, MessageCircle, MessageSquare, Monitor, Plus, Settings, Trash2, Upload, User, Users, X } from 'lucide-vue-next';
+import { BarChart2, Briefcase, ChevronDown, ChevronLeft, FileDown, LayoutGrid, MessageCircle, MessageSquare, Monitor, Plus, Settings, Trash2, Upload, User, Users, X, Loader2, AlertCircle, CheckCircle2, HelpCircle } from 'lucide-vue-next';
 
 const router = useRouter();
 const route = useRoute();
@@ -20,7 +20,7 @@ const menuItems = [
   { 
     icon: Briefcase, 
     label: '运营工具',
-    subItems: ['客户欢迎语', '消息群发', '客户朋友圈', '标签拉群', '个人SOP', '人群包']
+    subItems: ['客户欢迎语', '消息群发', '客户朋友圈', '标签拉群', '个人SOP', '人群包', '车辆包']
   },
   { icon: BarChart2, label: 'BI看板' },
   { icon: LayoutGrid, label: '管理中心' },
@@ -38,6 +38,7 @@ const handleSubMenuClick = (subItem: string) => {
   activeMenu.value = subItem;
   if (subItem === '个人SOP') router.push('/features/personal-sop/new');
   if (subItem === '人群包') router.push('/features/audience-package');
+  if (subItem === '车辆包') router.push('/features/vehicle-package');
 };
 
 type CreateMode = 'vinImport' | 'cdpFilter';
@@ -60,7 +61,24 @@ type RuleGroupNode = {
 };
 
 const createMode = ref<CreateMode>('cdpFilter');
-const createModeLabel = computed(() => (createMode.value === 'cdpFilter' ? '标签/属性组合圈选' : '导入车辆VIN码'));
+const createModeLabel = computed(() => (createMode.value === 'cdpFilter' ? '标签/属性组合圈选' : '选择车群包'));
+
+// 模拟有效车群包列表
+const effectiveVehiclePackages = [
+  { id: 'VG202603241', name: 'yx 车群', vehicleCount: 1 },
+  { name: '增量推送车群vw', id: 'VG202603242', vehicleCount: 1 },
+  { name: '小白测试纹车群', id: 'VG202603243', vehicleCount: 1 },
+  { name: 'cc车群测试', id: 'VG202603161', vehicleCount: 1 },
+  { name: '小圈车辆属性签...', id: 'VG202602041', vehicleCount: 1 },
+  { name: '杨景华p=3同星车...', id: 'VG202601261', vehicleCount: 5 },
+  { name: '小白匹配经车 大众', id: 'VG202601201', vehicleCount: 1 },
+  { name: 'yx车辆分群0115', id: 'VG202601151', vehicleCount: 1 }
+];
+
+const selectedVehiclePackageId = ref<string>('');
+const selectedVehiclePackage = computed(() => 
+  effectiveVehiclePackages.find(p => p.id === selectedVehiclePackageId.value)
+);
 
 const hashString = (input: string) => {
   let h = 2166136261;
@@ -93,7 +111,8 @@ const form = ref({
   relations: {
     newCar: true,
     owner: true,
-    lastService: true
+    lastRepair: true,
+    latestEPOwner: true
   },
   scopeDepts: [] as string[]
 });
@@ -203,23 +222,10 @@ const tagRuleRoot = ref<RuleGroupNode>({
   id: 'tag-root',
   type: 'group',
   op: 'OR',
-  children: [
-    createGroupNode('AND', [
-      createCondition('tag:性别', '等于', '男'),
-      createCondition('tag:动力类型', '等于', '油车')
-    ]),
-    createGroupNode('AND', [
-      createCondition('tag:性别', '等于', '女'),
-      createCondition('tag:动力类型', '等于', '电车')
-    ])
-  ]
+  children: []
 });
 
-const attrConditions = ref<RuleCondition[]>([
-  createCondition('attr:最近到店经销商758 Code', '等于', '72346'),
-  createCondition('attr:发票日期', '大于等于', '2026/01/01'),
-  createCondition('attr:发票日期', '小于等于', '2026/01/01')
-]);
+const attrConditions = ref<RuleCondition[]>([]);
 
 const findGroupNode = (group: RuleGroupNode, id: string): RuleGroupNode | null => {
   if (group.id === id) return group;
@@ -262,6 +268,24 @@ const addTagGroup = (groupId: string) => {
 const addTagRootGroup = () => addTagGroup(tagRuleRoot.value.id);
 const removeTagNode = (parentId: string, nodeId: string) => removeNodeFrom(tagRuleRoot, parentId, nodeId, tagFieldOptionItems.value[0]?.key || 'tag:性别');
 
+const getAttrType = (fieldKey: string) => {
+  if (fieldKey.includes('日期') || fieldKey.includes('时间')) return 'date';
+  if (fieldKey === 'attr:年龄') return 'number';
+  return 'text';
+};
+
+const getAttrOperators = (fieldKey: string) => {
+  const type = getAttrType(fieldKey);
+  if (type === 'date') return ['大于', '小于'];
+  if (type === 'text') return ['等于', '不等于'];
+  return ['等于', '不等于', '大于', '小于', '大于等于', '小于等于'];
+};
+
+const handleAttrFieldChange = (cond: RuleCondition) => {
+  cond.operator = getAttrOperators(cond.fieldKey)[0];
+  cond.value = '';
+};
+
 const addAttrRow = () => {
   const defaultKey = attrFieldOptionItems.value[0]?.key || 'attr:年龄';
   attrConditions.value.push(createCondition(defaultKey, operatorOptions[0], ''));
@@ -269,9 +293,6 @@ const addAttrRow = () => {
 
 const removeAttrRow = (id: string) => {
   attrConditions.value = attrConditions.value.filter(c => c.id !== id);
-  if (attrConditions.value.length === 0) {
-    addAttrRow();
-  }
 };
 
 const layer1WrapEl = ref<HTMLElement | null>(null);
@@ -319,20 +340,18 @@ const hydrateViewData = () => {
 
   form.value.relations.newCar = rnd() > 0.4;
   form.value.relations.owner = rnd() > 0.4;
-  form.value.relations.lastService = rnd() > 0.6;
-  if (!form.value.relations.newCar && !form.value.relations.owner && !form.value.relations.lastService) {
+  if (!form.value.relations.newCar && !form.value.relations.owner) {
     form.value.relations.owner = true;
   }
 
   if (createMode.value === 'vinImport') {
-    selectedFileName.value = `${id || '人群包'}-VIN导入.xlsx`;
+    selectedVehiclePackageId.value = effectiveVehiclePackages[Math.floor(rnd() * effectiveVehiclePackages.length)].id;
     return;
   }
 
   const genders = ['男', '女'];
   const power = ['油车', '电车'];
   const series = ['A4L', 'A6L', 'Q5L', 'Q3', 'Q7'];
-  const mileage = ['小于', '大于等于'];
   const mileageVal = ['1万', '3万', '5万', '8万'];
   const groupsCount = 2 + Math.floor(rnd() * 2);
 
@@ -345,7 +364,7 @@ const hydrateViewData = () => {
         createCondition('tag:性别', '等于', pick(rnd, genders)),
         createCondition('tag:动力类型', '等于', pick(rnd, power)),
         createCondition('tag:车系', '等于', pick(rnd, series)),
-        createCondition('tag:行驶里程', pick(rnd, mileage), pick(rnd, mileageVal))
+        createCondition('tag:行驶里程', '等于', pick(rnd, mileageVal))
       ])
     )
   };
@@ -357,8 +376,8 @@ const hydrateViewData = () => {
 
   attrConditions.value = [
     createCondition('attr:最近到店经销商758 Code', '等于', pick(rnd, codes)),
-    createCondition('attr:发票日期', '大于等于', `${year}/01/01`),
-    createCondition('attr:发票日期', '小于等于', `${year}/12/31`),
+    createCondition('attr:发票日期', '大于', `${year}-01-01`),
+    createCondition('attr:发票日期', '小于', `${year}-12-31`),
     createCondition('attr:年龄', pick(rnd, ageOps), pick(rnd, ageVals))
   ].slice(0, 3 + Math.floor(rnd() * 2));
 };
@@ -432,8 +451,8 @@ const handleFileChange = (event: Event) => {
 };
 
 const hasValidRelations = computed(() => {
-  const { newCar, owner, lastService } = form.value.relations;
-  return !!(newCar || owner || lastService);
+  const { newCar, owner, lastRepair, latestEPOwner } = form.value.relations;
+  return !!(newCar || owner || lastRepair || latestEPOwner);
 });
 
 const hasValidScope = computed(() => {
@@ -553,13 +572,14 @@ const scopeDisplayText = computed(() => {
   return `已选择 ${form.value.scopeDepts.length} 个部门/门店`;
 });
 const validateRuleTree = (group: RuleGroupNode): boolean => {
+  // 根节点为空视为有效（不进行标签筛选）
+  if (group.id === 'tag-root' && group.children.length === 0) return true;
+  
   let hasAny = false;
   for (const child of group.children) {
     if (child.type === 'condition') {
       hasAny = true;
-      if (!child.fieldKey.trim()) return false;
-      if (!child.operator.trim()) return false;
-      if (!child.value.trim()) return false;
+      if (!child.fieldKey.trim() || !child.operator.trim() || !child.value.trim()) return false;
       continue;
     }
     hasAny = true;
@@ -569,24 +589,103 @@ const validateRuleTree = (group: RuleGroupNode): boolean => {
 };
 
 const validateAttrConditions = (): boolean => {
-  if (attrConditions.value.length === 0) return false;
+  if (attrConditions.value.length === 0) return true;
   return attrConditions.value.every(c => c.fieldKey.trim() && c.operator.trim() && c.value.trim());
 };
 
 const canSave = computed(() => {
+  if (isViewMode.value) return true;
   if (!form.value.name.trim()) return false;
   if (!hasValidScope.value) return false;
   if (!hasValidRelations.value) return false;
-  if (createMode.value === 'vinImport') return !!selectedFileName.value;
-  return validateRuleTree(tagRuleRoot.value) && validateAttrConditions();
+  if (createMode.value === 'vinImport' && !selectedVehiclePackageId.value) return false;
+  
+  // 核心强制逻辑：必须计算过且未修改过条件，且数量在限制内
+  return calculationStatus.value === 'success' && !isCalculationDirty.value;
 });
 
 const showNameError = computed(() => !isViewMode.value && submitAttempted.value && !form.value.name.trim());
-const showVinError = computed(() => !isViewMode.value && submitAttempted.value && createMode.value === 'vinImport' && !selectedFileName.value);
+const showVinError = computed(() => !isViewMode.value && submitAttempted.value && createMode.value === 'vinImport' && !selectedVehiclePackageId.value);
 const showTagError = computed(() => !isViewMode.value && submitAttempted.value && createMode.value === 'cdpFilter' && !validateRuleTree(tagRuleRoot.value));
 const showAttrError = computed(() => !isViewMode.value && submitAttempted.value && createMode.value === 'cdpFilter' && !validateAttrConditions());
 const showRelationsError = computed(() => !isViewMode.value && submitAttempted.value && !hasValidRelations.value);
 const showScopeError = computed(() => !isViewMode.value && submitAttempted.value && !hasValidScope.value);
+
+// --- 数量计算相关逻辑 ---
+const calculatingQuantity = ref(false);
+const calculationResult = ref<number | null>(null);
+const displayResult = ref(0);
+const calculationStatus = ref<'none' | 'success' | 'overlimit' | 'error'>('none');
+const isCalculationDirty = ref(true);
+
+let animationFrame: number | null = null;
+const animateValue = (start: number, end: number, duration: number = 800) => {
+  const startTime = performance.now();
+  const step = (currentTime: number) => {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+    displayResult.value = Math.floor(start + (end - start) * easeProgress);
+    if (progress < 1) {
+      animationFrame = requestAnimationFrame(step);
+    }
+  };
+  if (animationFrame) cancelAnimationFrame(animationFrame);
+  animationFrame = requestAnimationFrame(step);
+};
+
+const canCalculate = computed(() => {
+  if (!form.value.name.trim()) return false;
+  if (!hasValidScope.value) return false;
+  if (!hasValidRelations.value) return false;
+  if (createMode.value === 'vinImport') return !!selectedVehiclePackageId.value;
+  return validateRuleTree(tagRuleRoot.value) && validateAttrConditions();
+});
+
+const handleCalculate = async () => {
+  if (!canCalculate.value || calculatingQuantity.value) return;
+  
+  calculatingQuantity.value = true;
+  calculationStatus.value = 'none';
+  
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  // 模拟计算逻辑：如果是车群包导入，数量基数参考车群包车辆数
+  let baseCount = Math.floor(Math.random() * 300000);
+  if (createMode.value === 'vinImport' && selectedVehiclePackage.value) {
+    baseCount = selectedVehiclePackage.value.vehicleCount * (Math.random() * 1.5 + 0.5); // 模拟转化
+  }
+  
+  calculationResult.value = Math.floor(baseCount);
+  animateValue(displayResult.value, Math.floor(baseCount));
+  
+  if (baseCount > 200000) {
+    calculationStatus.value = 'overlimit';
+  } else {
+    calculationStatus.value = 'success';
+  }
+  isCalculationDirty.value = false;
+  
+  calculatingQuantity.value = false;
+};
+
+// 监听所有核心筛选条件的变化
+import { watch } from 'vue';
+watch(
+  [
+    () => form.value.relations, 
+    () => form.value.scopeDepts,
+    tagRuleRoot, 
+    attrConditions,
+    selectedVehiclePackageId,
+    createMode
+  ], 
+  () => {
+    // 只要有任何变化，就标记为数据已脏
+    isCalculationDirty.value = true;
+  }, 
+  { deep: true }
+);
 
 const handleCancel = () => {
   router.push('/features/audience-package');
@@ -679,6 +778,24 @@ const handleSave = () => {
 
       <div class="flex-1 overflow-y-auto p-4">
         <div class="bg-white rounded shadow-sm p-6 min-h-full flex flex-col">
+          <!-- 产品说明文档内嵌文案 -->
+          <div class="mb-8 p-5 bg-blue-50 border border-blue-100 rounded-xl">
+            <div class="flex items-center gap-2 mb-3 text-blue-800">
+              <HelpCircle :size="18" />
+              <h3 class="font-bold text-[15px]">人群包创建校验规则说明</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-[13px] text-blue-700/80 leading-6">
+              <div class="space-y-2">
+                <p><strong class="text-blue-800">1. 业务意义：</strong> 为确保系统运行效率及触达精准度，所有人群包在保存前必须进行规模校验。强制校验机制可防止超大规模数据导致的发送延迟，保障营销活动的稳定性。</p>
+                <p><strong class="text-blue-800">2. 触发逻辑：</strong> 填写完名称、使用范围、车辆关系，并完成【标签/属性圈选】或【选择车群包】后，需点击底部的「查询人群包内客户数量」按钮。只有查询出的用户总量≤200,000条时，系统才允许执行保存。</p>
+              </div>
+              <div class="space-y-2">
+                <p><strong class="text-blue-800">3. 数量上限：</strong> 单个人群包用户上限为 <span class="text-red-600 font-bold">200,000</span> 条。若超过限制，请尝试细化标签组合（如增加车型、里程等限制）或更换更精准的车群包后再重新查询。</p>
+                <p><strong class="text-blue-800">4. 重校验要求：</strong> <span class="text-orange-700 font-bold">重要！</span> 查询通过后，若您修改了任何圈选条件或更换了已选的车群包，原查询结果将立即失效。您必须再次点击「查询人群包内客户数量」以确保数据一致性。</p>
+              </div>
+            </div>
+          </div>
+
           <div v-if="isViewMode" class="mb-4 px-4 py-3 bg-gray-50 border border-gray-200 rounded text-sm text-gray-700">
             提示：已创建的人群包仅可修改使用范围
           </div>
@@ -726,7 +843,7 @@ const handleSave = () => {
                   </button>
                 </div>
                 <div class="text-xs text-gray-400">
-                  二选一：导入 VIN 或按标签/属性组合圈选
+                  二选一：从车群包选择或按标签/属性组合圈选
                 </div>
               </template>
               <template v-else>
@@ -738,21 +855,26 @@ const handleSave = () => {
 
             <template v-if="createMode === 'vinImport'">
               <div class="text-gray-700 font-medium flex items-center justify-end">
-                <span class="text-[#e53935] mr-1">*</span>导入车辆VIN码:
+                <span class="text-[#e53935] mr-1">*</span>选择有效车群包:
               </div>
-              <div class="flex items-center gap-3">
-                <button v-if="!isViewMode" @click="openUpload" class="h-10 px-4 border border-gray-300 rounded bg-white hover:bg-gray-50 transition-colors flex items-center gap-2">
-                  <Upload :size="16" class="text-gray-600" />
-                  +导入车辆VIN码
-                </button>
-                <div class="text-xs text-gray-400">
-                  {{ selectedFileName ? `已选择文件：${selectedFileName}` : '支持 Excel/CSV（原型展示）' }}
+              <div class="flex flex-col gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-[400px] h-10 px-3 border border-gray-300 rounded flex items-center bg-white">
+                    <select v-model="selectedVehiclePackageId" :disabled="isViewMode" class="w-full bg-transparent outline-none text-sm text-gray-700 disabled:text-gray-500">
+                      <option value="" disabled>请选择有效的车群包</option>
+                      <option v-for="pkg in effectiveVehiclePackages" :key="pkg.id" :value="pkg.id">
+                        {{ pkg.name }} ({{ pkg.id }})
+                      </option>
+                    </select>
+                  </div>
+                  <div v-if="selectedVehiclePackage" class="text-xs text-gray-500">
+                    覆盖车辆数：<span class="font-bold text-gray-800">{{ selectedVehiclePackage.vehicleCount }}</span>
+                  </div>
                 </div>
                 <div v-if="showVinError" class="text-xs text-[#e53935]">
-                  请先选择文件
+                  请选择一个有效的车群包
                 </div>
               </div>
-
             </template>
 
             <template v-else>
@@ -797,6 +919,7 @@ const handleSave = () => {
                     <div>1、整体：【标签圈选】和【属性圈选】为同时满足的且关系；</div>
                     <div>2、标签圈选：分组间为或关系，分组内为且关系；</div>
                     <div>3、属性圈选：多条属性为同时满足的且关系；</div>
+                    <div>4、同一分组内，标签值可多选，若条件为“等于”，则多选的标签值间为或关系，若条件为“不等于”，则多选的标签值间为且关系。</div>
                   </div>
                 </div>
 
@@ -857,7 +980,7 @@ const handleSave = () => {
                         </span>
 
                         <div :class="`${idx === 0 ? 'w-[328px]' : 'w-72'} h-10 px-3 border border-gray-300 rounded flex items-center bg-white`">
-                          <select v-model="cond.fieldKey" :disabled="isViewMode" class="w-full bg-transparent outline-none text-sm text-gray-700 disabled:text-gray-500">
+                          <select v-model="cond.fieldKey" @change="handleAttrFieldChange(cond)" :disabled="isViewMode" class="w-full bg-transparent outline-none text-sm text-gray-700 disabled:text-gray-500">
                             <option value="" disabled>请选择属性</option>
                             <option v-for="opt in attrFieldOptionItems" :key="opt.key" :value="opt.key">{{ opt.label }}</option>
                           </select>
@@ -866,11 +989,17 @@ const handleSave = () => {
                         <div class="w-40 h-10 px-3 border border-gray-300 rounded flex items-center bg-white">
                           <select v-model="cond.operator" :disabled="isViewMode" class="w-full bg-transparent outline-none text-sm text-gray-700 disabled:text-gray-500">
                             <option value="" disabled>请选择</option>
-                            <option v-for="opt in operatorOptions" :key="opt" :value="opt">{{ opt }}</option>
+                            <option v-for="opt in getAttrOperators(cond.fieldKey)" :key="opt" :value="opt">{{ opt }}</option>
                           </select>
                         </div>
 
-                        <input v-model="cond.value" :disabled="isViewMode" type="text" placeholder="请输入" class="flex-1 h-10 px-3 border border-gray-300 rounded focus:border-red-500 focus:outline-none bg-white disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed" />
+                        <input 
+                          v-model="cond.value" 
+                          :disabled="isViewMode" 
+                          :type="getAttrType(cond.fieldKey) === 'date' ? 'date' : (getAttrType(cond.fieldKey) === 'number' ? 'number' : 'text')" 
+                          :placeholder="getAttrType(cond.fieldKey) === 'date' ? 'YYYY-MM-DD' : '请输入'" 
+                          class="flex-1 h-10 px-3 border border-gray-300 rounded focus:border-red-500 focus:outline-none bg-white disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed" 
+                        />
 
                         <button v-if="!isViewMode" type="button" @click="removeAttrRow(cond.id)" class="h-10 w-10 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 transition-colors text-gray-800">
                           <Trash2 :size="16" />
@@ -893,21 +1022,25 @@ const handleSave = () => {
             </template>
 
             <div class="text-gray-700 font-medium flex items-center justify-end pt-1">
-              车辆关系:
+              <span class="text-[#e53935] mr-1">*</span>车辆关系:
             </div>
             <div>
               <div class="flex items-center gap-6 pt-1">
-                <label class="flex items-center gap-2 text-gray-700">
+                <label class="flex items-center gap-2 text-gray-700 cursor-pointer">
                   <input v-model="form.relations.newCar" :disabled="isViewMode" type="checkbox" class="rounded border-gray-300 text-[#e53935] focus:ring-[#e53935] accent-[#e53935] disabled:opacity-60 disabled:cursor-not-allowed" />
                   APP绑车人
                 </label>
-                <label class="flex items-center gap-2 text-gray-700">
+                <label class="flex items-center gap-2 text-gray-700 cursor-pointer">
                   <input v-model="form.relations.owner" :disabled="isViewMode" type="checkbox" class="rounded border-gray-300 text-[#e53935] focus:ring-[#e53935] accent-[#e53935] disabled:opacity-60 disabled:cursor-not-allowed" />
                   购车车主
                 </label>
-                <label class="flex items-center gap-2 text-gray-700">
-                  <input v-model="form.relations.lastService" :disabled="isViewMode" type="checkbox" class="rounded border-gray-300 text-[#e53935] focus:ring-[#e53935] accent-[#e53935] disabled:opacity-60 disabled:cursor-not-allowed" />
-                  最近一次维修人
+                <label class="flex items-center gap-2 text-gray-700 cursor-pointer">
+                  <input v-model="form.relations.lastRepair" :disabled="isViewMode" type="checkbox" class="rounded border-gray-300 text-[#e53935] focus:ring-[#e53935] accent-[#e53935] disabled:opacity-60 disabled:cursor-not-allowed" />
+                  最近一次送修人
+                </label>
+                <label class="flex items-center gap-2 text-gray-700 cursor-pointer">
+                  <input v-model="form.relations.latestEPOwner" :disabled="isViewMode" type="checkbox" class="rounded border-gray-300 text-[#e53935] focus:ring-[#e53935] accent-[#e53935] disabled:opacity-60 disabled:cursor-not-allowed" />
+                  最新EP客档车主
                 </label>
               </div>
               <div v-if="showRelationsError" class="text-xs text-[#e53935] mt-2">
@@ -937,6 +1070,73 @@ const handleSave = () => {
             </div>
           </div>
 
+          <!-- 数量计算前置流程 (简化版) -->
+          <div v-if="!isViewMode" class="mt-12 mb-8 p-8 bg-gray-50 border border-gray-200 rounded-2xl max-w-6xl ml-[144px]">
+            <div class="flex items-center gap-10">
+              <div class="flex flex-col gap-3">
+                <button 
+                  type="button"
+                  @click="handleCalculate"
+                  :disabled="!canCalculate || calculatingQuantity"
+                  :class="[
+                    'h-12 px-10 rounded-lg font-bold transition-all flex items-center justify-center shadow-md',
+                    canCalculate && !calculatingQuantity 
+                      ? 'bg-[#e53935] text-white hover:bg-red-700 active:scale-95' 
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  ]"
+                >
+                  <Loader2 v-if="calculatingQuantity" :size="20" class="animate-spin mr-2" />
+                  {{ calculatingQuantity ? '正在查询...' : '查询人群包内客户数量' }}
+                </button>
+              </div>
+              
+              <div class="flex-1">
+                <!-- 初始状态 -->
+                <div v-if="calculationStatus === 'none' && !calculatingQuantity && isCalculationDirty" class="text-gray-500 text-sm">
+                  请完善{{ createMode === 'cdpFilter' ? '圈选条件' : '车群包选择' }}后，点击查询客户数量（上限 200,000 条）
+                </div>
+
+                <!-- 计算结果展示 -->
+                <div v-if="calculationResult !== null && !calculatingQuantity" class="flex items-center gap-8">
+                  <div class="flex flex-col">
+                    <div class="text-[32px] font-black text-gray-900 leading-none">
+                      {{ displayResult.toLocaleString() }}
+                    </div>
+                    <div class="text-[12px] text-gray-400 mt-1 font-bold tracking-wider">符合条件用户总数</div>
+                  </div>
+
+                  <!-- 状态标签 -->
+                  <div 
+                    :class="[
+                      'px-4 py-2 rounded-lg border flex items-center gap-2 transition-all',
+                      isCalculationDirty ? 'bg-orange-50 text-orange-700 border-orange-200' : (calculationStatus === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200')
+                    ]"
+                  >
+                    <AlertCircle v-if="isCalculationDirty" :size="18" />
+                    <CheckCircle2 v-else-if="calculationStatus === 'success'" :size="18" />
+                    <AlertCircle v-else :size="18" />
+                    <span class="text-sm font-bold">
+                      {{ isCalculationDirty ? '条件已变更' : (calculationStatus === 'success' ? '校验通过' : '数量超限') }}
+                    </span>
+                  </div>
+
+                  <!-- 反馈文案 -->
+                  <div class="flex-1 text-sm">
+                    <p v-if="isCalculationDirty" class="text-orange-600 font-medium">
+                      检测到筛选条件已修改，请重新点击“数量计算”以同步最新数据。
+                    </p>
+                    <p v-else-if="calculationStatus === 'success'" class="text-green-600 font-medium">
+                      数值符合限制，可正常保存。
+                    </p>
+                    <p v-else-if="calculationStatus === 'overlimit'" class="text-red-600 font-medium">
+                      数量超过 20w 上限，请增加限制条件。
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="mt-auto pt-10">
             <div class="flex items-center gap-3">
               <button @click="handleCancel" class="h-9 px-5 border border-gray-300 text-gray-600 rounded hover:bg-gray-50 transition-colors">
@@ -945,7 +1145,17 @@ const handleSave = () => {
               <button v-if="isViewMode" @click="handleViewSave" class="h-9 px-5 rounded transition-colors bg-[#e53935] text-white hover:bg-red-700">
                 保存使用范围
               </button>
-              <button v-else @click="handleSave" class="h-9 px-5 rounded transition-colors bg-[#e53935] text-white hover:bg-red-700">
+              <button 
+                v-else 
+                @click="handleSave" 
+                :disabled="!canSave"
+                :class="[
+                  'h-9 px-8 rounded transition-all font-bold',
+                  canSave 
+                    ? 'bg-[#e53935] text-white hover:bg-red-700 active:scale-95 shadow-md' 
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-100'
+                ]"
+              >
                 保存
               </button>
             </div>
@@ -960,44 +1170,6 @@ const handleSave = () => {
       containerClass="left-1/2 -translate-x-1/2 right-auto bottom-auto"
       folderPath="src/features/audience-package-management"
     />
-
-    <div v-if="showUploadModal" class="fixed inset-0 z-[90] bg-black/30 flex items-center justify-center p-6">
-      <div class="bg-white w-full max-w-2xl rounded shadow-lg border border-gray-200">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <div class="text-gray-800 font-bold">导入车辆VIN码</div>
-          <div class="flex items-center gap-3">
-            <button class="h-8 px-3 bg-[#e53935] text-white rounded hover:bg-red-700 transition-colors flex items-center gap-2">
-              <FileDown :size="14" />
-              下载模板
-            </button>
-            <button @click="closeUpload" class="p-1 text-gray-400 hover:text-gray-600">
-              <X :size="18" />
-            </button>
-          </div>
-        </div>
-        <div class="px-6 py-10 flex flex-col items-center">
-          <label class="w-full max-w-sm h-36 border border-dashed border-gray-300 rounded flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 transition-colors">
-            <input type="file" accept=".xlsx,.xls,.csv" class="hidden" @change="handleFileChange" />
-            <div class="text-[#e53935] font-bold">点击上传</div>
-            <div class="text-xs text-gray-400 mt-2">每次仅能上传一个文件</div>
-          </label>
-          <div v-if="selectedFileName" class="text-sm text-gray-600 mt-4">
-            已选择：<span class="font-mono">{{ selectedFileName }}</span>
-          </div>
-          <div class="text-xs text-gray-400 mt-3 text-center max-w-xl">
-            请下载模板，按模板填写后上传（excel文件）。原型仅展示交互与布局。
-          </div>
-        </div>
-        <div class="px-6 pb-5 flex justify-end gap-3">
-          <button @click="closeUpload" class="h-9 px-4 border border-gray-300 text-gray-600 rounded hover:bg-gray-50 transition-colors">
-            关闭
-          </button>
-          <button @click="closeUpload" class="h-9 px-4 bg-[#e53935] text-white rounded hover:bg-red-700 transition-colors">
-            确认
-          </button>
-        </div>
-      </div>
-    </div>
 
     <div v-if="showScopeModal" class="fixed inset-0 z-[95] bg-black/30 flex items-center justify-center p-6">
       <div class="bg-white w-full max-w-4xl rounded shadow-lg border border-gray-200">
