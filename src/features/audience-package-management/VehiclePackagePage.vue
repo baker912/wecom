@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import PrototypeCodeLocation from '../../components/PrototypeCodeLocation.vue';
-import { BarChart2, Briefcase, CalendarDays, ChevronDown, ChevronLeft, LayoutGrid, MessageCircle, MessageSquare, Monitor, Plus, Search, Settings, User, Users, Upload, Eye } from 'lucide-vue-next';
+import { BarChart2, Briefcase, CalendarDays, ChevronDown, ChevronLeft, LayoutGrid, MessageCircle, MessageSquare, Monitor, Plus, Search, Settings, User, Users } from 'lucide-vue-next';
 
 const router = useRouter();
 const activeMenu = ref('车辆包');
@@ -86,8 +86,7 @@ const resetFilters = () => {
   filters.value = {
     name: '',
     code: '',
-    system: '',
-    scene: '',
+    status: '全部',
     startDate: '',
     endDate: ''
   };
