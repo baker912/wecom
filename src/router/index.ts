@@ -20,6 +20,7 @@ import ContentLibraryWaterfallPage from '../features/content-library-waterfall/C
 import SessionArchivePage from '../features/session-archive/SessionArchivePage.vue'
 import DeleteFriendSettingsPage from '../features/delete-friend-settings/DeleteFriendSettingsPage.vue'
 import AddRemarkPage from '../features/add-remark/AddRemarkPage.vue'
+import CustomerProfileFromRemarkPage from '../features/add-remark/CustomerProfilePage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -108,11 +109,17 @@ const router = createRouter({
       name: 'delete-friend-settings',
       component: DeleteFriendSettingsPage
     },
-    // 需求: 添加备注功能
+    // 需求: AI自动跟进潜客
     {
       path: '/features/add-remark',
       name: 'add-remark',
       component: AddRemarkPage
+    },
+    // 客户画像页面（供 AI自动跟进潜客 返回用）
+    {
+      path: '/features/add-remark/customer-profile',
+      name: 'add-remark-customer-profile',
+      component: CustomerProfileFromRemarkPage
     },
     {
       path: '/wecom-sop',

@@ -6,19 +6,51 @@ import { ChevronLeft, ChevronRight, Camera, Sparkles } from 'lucide-vue-next';
 const router = useRouter();
 
 const goBack = () => {
-  router.push('/');
+  router.push('/features/add-remark/customer-profile');
 };
 
 // AI帮写状态
 const aiThinking = ref(false);
 const aiSuccess = ref(false);
+const aiNoData = ref(false);
 const aiGeneratedContent = ref('');
-const isAiGenerated = ref(false);
+const isAiGenerated = ref('');
+const toastVisible = ref(false);
+const toastMessage = ref('');
+
+const showToastMsg = (msg: string) => {
+  toastMessage.value = msg;
+  toastVisible.value = true;
+  setTimeout(() => { toastVisible.value = false; }, 2000);
+};
 
 const handleAiClick = () => {
   if (aiThinking.value) return;
+  
+  // 如果已经AI成功，再次点击 = 撤销AI结果
+  if (aiSuccess.value) {
+    handleRevertAi();
+    return;
+  }
+  
+  // 重置状态
   aiThinking.value = true;
   aiSuccess.value = false;
+  aiNoData.value = false;
+  
+  // 模拟判断：是否有当天的会话内容
+  // 这里用随机模拟，实际应查询后端当天会话数据
+  const hasSessionToday = Math.random() > 0.3; // 70%概率有数据，方便测试
+  
+  if (!hasSessionToday) {
+    // 无当天会话内容
+    aiThinking.value = false;
+    aiNoData.value = true;
+    showToastMsg('当天无会话内容进行分析');
+    return;
+  }
+  
+  // 有数据，进入思考状态
   setTimeout(() => {
     aiThinking.value = false;
     aiSuccess.value = true;
@@ -26,7 +58,7 @@ const handleAiClick = () => {
     const aiContent = '客户对A5 Sportback表现出较高兴趣，询问了车辆配置及价格优惠。客户预算充足，计划采用按揭方式购车，关注厂方促销政策和政府补贴。建议下次邀约到店试驾，重点介绍车辆科技配置及金融方案。';
     feedback.value = aiContent;
     aiGeneratedContent.value = aiContent;
-    isAiGenerated.value = true;
+    isAiGenerated.value = 'true';
     // AI预填预约到店时间和事项
     预约到店时间.value = '2026-06-20 10:00';
     预约到店事项.value = '试驾';
@@ -34,10 +66,23 @@ const handleAiClick = () => {
   }, 2000);
 };
 
+// 撤销AI结果，恢复初始状态
+const handleRevertAi = () => {
+  feedback.value = '';
+  aiGeneratedContent.value = '';
+  isAiGenerated.value = '';
+  aiSuccess.value = false;
+  aiNoData.value = false;
+  aiThinking.value = false;
+  预约到店时间.value = '';
+  预约到店事项.value = '';
+  showToastMsg('已撤销AI生成内容');
+};
+
 const onFeedbackInput = () => {
   // 手动编辑后，如果内容与AI生成的不一致，移除AI标记
-  if (isAiGenerated.value && feedback.value !== aiGeneratedContent.value) {
-    isAiGenerated.value = false;
+  if (isAiGenerated.value === 'true' && feedback.value !== aiGeneratedContent.value) {
+    isAiGenerated.value = '';
   }
 };
 
@@ -70,10 +115,7 @@ const policyTags = ref([
 const followCurrentCar = ref('否');
 
 // 跟进情况
-const actualFollowDate = ref('');
-const followMethod = ref('');
 const feedback = ref('');
-const imagePreviewUrl = ref<string | null>(null);
 const 意向级别 = ref('A');
 const 跟进结果 = ref('跟进');
 const 是否预约到店 = ref('是');
@@ -103,8 +145,7 @@ const togglePlanBuyMethod = (method: string) => {
 };
 
 const handleImageUpload = () => {
-  // Mock: 使用一个示例图片
-  imagePreviewUrl.value = null; // 无图片状态
+  // Mock: 无图片状态，预留后续图片上传功能
 };
 </script>
 
@@ -288,17 +329,22 @@ const handleImageUpload = () => {
       <h2 class="text-[15px] font-semibold text-gray-900">跟进情况</h2>
       <button
         @click="handleAiClick"
-        :disabled="aiThinking || aiSuccess"
+        :disabled="aiThinking"
         class="ai-btn relative flex items-center gap-1.5 px-3 py-1 rounded-full text-[13px] font-medium overflow-hidden transition-all duration-300"
-        :class="{ 'cursor-wait': aiThinking, 'cursor-pointer': !aiThinking && !aiSuccess }"
+        :class="{ 
+          'cursor-wait': aiThinking, 
+          'cursor-pointer': !aiThinking,
+          'ai-btn-no-data': aiNoData,
+          'ai-btn-revert': aiSuccess,
+        }"
       >
         <!-- 动态光晕背景 -->
         <span class="ai-btn-glow"></span>
         <!-- 扫光动画条 -->
-        <span v-if="!aiSuccess" class="ai-btn-scan"></span>
-        <Sparkles :size="14" class="ai-icon relative z-10" :class="{ 'ai-icon-active': aiThinking, 'ai-icon-success': aiSuccess }" />
-        <span class="relative z-10" :class="aiThinking ? 'ai-text-active' : aiSuccess ? 'ai-text-success' : 'ai-text-idle'">
-          {{ aiThinking ? 'AI正在思考中...' : aiSuccess ? 'AI分析成功' : 'AI跟进' }}
+        <span v-if="!aiSuccess && !aiNoData" class="ai-btn-scan"></span>
+        <Sparkles :size="14" class="ai-icon relative z-10" :class="{ 'ai-icon-active': aiThinking, 'ai-icon-success': aiSuccess, 'ai-icon-error': aiNoData }" />
+        <span class="relative z-10" :class="aiThinking ? 'ai-text-active' : aiSuccess ? 'ai-text-revert' : aiNoData ? 'ai-text-error' : 'ai-text-idle'">
+          {{ aiThinking ? 'AI正在思考中...' : aiSuccess ? '撤销AI结果' : aiNoData ? '无会话数据' : 'AI帮写' }}
         </span>
       </button>
     </div>
@@ -321,8 +367,8 @@ const handleImageUpload = () => {
           <span class="text-red-500 text-sm">*</span>
           <span class="text-sm text-gray-700">客户反馈：</span>
         </div>
-        <div class="ai-feedback-wrapper relative rounded-lg" :class="{ 'ai-active': isAiGenerated }">
-          <div v-if="isAiGenerated" class="ai-border-glow"></div>
+        <div class="ai-feedback-wrapper relative rounded-lg" :class="{ 'ai-active': isAiGenerated === 'true' }">
+          <div v-if="isAiGenerated === 'true'" class="ai-border-glow"></div>
           <textarea
             v-model="feedback"
             @input="onFeedbackInput"
@@ -331,7 +377,7 @@ const handleImageUpload = () => {
             class="w-full text-sm text-gray-900 bg-transparent resize-none outline-none placeholder:text-gray-300 relative z-10 px-3 py-2"
           ></textarea>
         </div>
-        <div v-if="isAiGenerated" class="flex items-center gap-1 mt-1.5 px-1">
+        <div v-if="isAiGenerated === 'true'" class="flex items-center gap-1 mt-1.5 px-1">
           <Sparkles :size="11" class="text-violet-400" />
           <span class="text-[11px] text-violet-400">内容由AI生成，仅供参考</span>
         </div>
@@ -349,7 +395,7 @@ const handleImageUpload = () => {
       <div class="flex items-center justify-between py-3 border-t border-gray-50">
         <span class="text-sm text-gray-700"><span class="text-red-500 mr-0.5">*</span>意向级别:</span>
         <div class="flex items-center gap-1">
-          <span class="text-base font-bold text-gray-900">A</span>
+          <span class="text-base font-bold text-gray-900">{{ 意向级别 }}</span>
         </div>
       </div>
 
@@ -357,7 +403,7 @@ const handleImageUpload = () => {
       <div class="flex items-center justify-between py-3 border-b border-gray-50">
         <span class="text-sm text-gray-700"><span class="text-red-500 mr-0.5">*</span>跟进结果:</span>
         <div class="flex items-center gap-2">
-          <span class="text-sm text-gray-900">跟进</span>
+          <span class="text-sm text-gray-900">{{ 跟进结果 }}</span>
         </div>
       </div>
 
@@ -411,10 +457,26 @@ const handleImageUpload = () => {
       <div class="flex items-center justify-between py-3 border-b border-gray-50">
         <span class="text-sm text-gray-700"><span class="text-red-500 mr-0.5">*</span>下次跟进方式 :</span>
         <div class="flex items-center gap-1 min-w-0">
-          <span class="text-sm text-gray-900">电话</span>
+          <span class="text-sm text-gray-900">{{ 下次跟进方式 }}</span>
         </div>
       </div>
     </div>
+
+    <!-- Toast 通知 -->
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="opacity-0 translate-y-4"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition duration-300 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 translate-y-4"
+    >
+      <div v-if="toastVisible" class="fixed inset-0 z-[150] flex items-center justify-center pointer-events-none">
+        <div class="bg-black/80 text-white px-6 py-3 rounded-lg shadow-xl backdrop-blur-sm text-sm font-medium pointer-events-auto">
+          {{ toastMessage }}
+        </div>
+      </div>
+    </Transition>
 
     <!-- 保存按钮 -->
     <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 pb-5 pt-2 z-40">
@@ -537,8 +599,23 @@ const handleImageUpload = () => {
 }
 
 .ai-icon-success {
-  color: #34d399;
-  filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.7));
+  color: #fb923c;
+  filter: drop-shadow(0 0 6px rgba(251, 146, 60, 0.7));
+}
+
+.ai-icon-error {
+  color: #f87171;
+  filter: drop-shadow(0 0 6px rgba(248, 113, 113, 0.7));
+}
+
+/* 撤销按钮样式 */
+.ai-btn-revert {
+  border-color: rgba(251, 146, 60, 0.5);
+}
+
+/* 无数据状态按钮样式 */
+.ai-btn-no-data {
+  border-color: rgba(248, 113, 113, 0.4);
 }
 
 @keyframes icon-pulse {
@@ -565,6 +642,20 @@ const handleImageUpload = () => {
 
 .ai-text-success {
   background: linear-gradient(90deg, #34d399, #6ee7b7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ai-text-revert {
+  background: linear-gradient(90deg, #fb923c, #fbbf24);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ai-text-error {
+  background: linear-gradient(90deg, #f87171, #fca5a5);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

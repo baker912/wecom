@@ -44,3 +44,12 @@ export interface ArchiveTab {
   label: string;
   active?: boolean;
 }
+
+export interface ProspectRecord {
+  id: string;
+  level: string;        // e.g. "H(两周内)"
+  status: string;       // e.g. "跟进中"
+  channel: string;      // e.g. "垂媒平台"
+  intentModel: string;  // e.g. "Q6"
+  createTime: string;
+}

@@ -69,8 +69,21 @@ const requirementInfoMap: Record<string, { title: string; subtitle: string; fold
       '购置类型标签化：新购 / 增购 / 换购 标签快速切换选择。',
       '政策关注标签化：厂方政策 / 店铺政策 / 政府补贴 / 其他优惠 多选标签。',
       '跟进情况记录：实际跟进日期、跟进方式、客户反馈文本输入、图片附件上传。',
-      'AI帮写辅助：跟进情况区域提供AI智能帮写能力，辅助顾问快速生成跟进内容。',
+      'AI帮写辅助：跟进情况区域提供AI智能帮写能力。点击「AI帮写」按钮后，系统判断当天是否有会话内容：若有数据则进入「AI正在思考中...」状态（2秒模拟），分析成功后按钮变为「撤销AI结果」，自动填充客户反馈、预约到店时间/事项等字段；若无数据则Toast提示「当天无会话内容进行分析」。点击「撤销AI结果」可一键清空AI生成的所有内容并恢复初始状态。',
       '下次跟进计划：预约到店时间/事项、下次跟进日期/方式一键设置。'
+    ]
+  },
+  '/features/add-remark/customer-profile': {
+    title: '客户画像（潜客跟进）',
+    subtitle: '核心需求：展示潜客的360度全景信息，支持VIN区分车辆标签，辅助顾问了解客户全貌',
+    folderPath: 'src/features/add-remark',
+    logic: [
+      '客户基础信息：姓名、手机号、性别、企微添加日期等基本信息展示。',
+      '车辆信息按VIN展示：支持多辆车VIN下拉切换，每辆车展示独立的车辆标签信息。',
+      '客户档案：售前线索/潜客/售后线索/车主档案 多维度档案信息。',
+      '客户动态：线索跟进/好友跟进/潜客跟进/好友浏览/活动 动态时间线。',
+      'AI悬浮助手：底部常驻AI助手球，点击展开AI智能画像分析与话术推荐。',
+      '底部操作栏：写潜客跟进快捷入口，一键跳转至跟进填写页面。'
     ]
   }
 };
@@ -86,7 +99,8 @@ const isMobilePage = computed(() => {
     '/content-library',
     '/features/vin-tags',
     '/features/ai-analysis',
-    '/features/add-remark'
+    '/features/add-remark',
+    '/features/add-remark/customer-profile'
   ];
   return mobilePaths.includes(route.path);
 });

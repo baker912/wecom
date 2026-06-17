@@ -1,4 +1,4 @@
-import { Customer, TagGroup, Activity, ArchiveTab } from '../types';
+import { Customer, TagGroup, Activity, ArchiveTab, ProspectRecord } from '../types';
 
 export const mockCustomer: Customer = {
   id: '1',
@@ -121,4 +121,15 @@ export const mockActivities: Activity[] = [
     timestamp: '2026-03-05 18:21:35',
     description: '生产验证优化无参与'
   }
+];
+
+export const mockProspects: ProspectRecord[] = [
+  {
+    id: 'p1',
+    level: 'H(两周内)',
+    status: '跟进中',
+    channel: '垂媒平台',
+    intentModel: 'Q6',
+    createTime: '2026-06-10',
+  },
 ];
