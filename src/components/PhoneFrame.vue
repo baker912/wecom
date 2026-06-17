@@ -59,6 +59,19 @@ const requirementInfoMap: Record<string, { title: string; subtitle: string; fold
     logic: [
       '基础画像：整合客户姓名、性别、联系方式等基本信息。'
     ]
+  },
+  '/features/add-remark': {
+    title: 'AI自动跟进潜客',
+    subtitle: '核心需求：基于AI能力，自动跟进潜客意向信息与跟进情况，辅助顾问高效管理客户关系',
+    folderPath: 'src/features/add-remark',
+    logic: [
+      '意向信息编辑：支持车辆类别（CKD/FBU/NEV）、意向车系、预购日期、购车周期、购车预算等字段的备注与修改。',
+      '购置类型标签化：新购 / 增购 / 换购 标签快速切换选择。',
+      '政策关注标签化：厂方政策 / 店铺政策 / 政府补贴 / 其他优惠 多选标签。',
+      '跟进情况记录：实际跟进日期、跟进方式、客户反馈文本输入、图片附件上传。',
+      'AI帮写辅助：跟进情况区域提供AI智能帮写能力，辅助顾问快速生成跟进内容。',
+      '下次跟进计划：预约到店时间/事项、下次跟进日期/方式一键设置。'
+    ]
   }
 };
 
@@ -72,7 +85,8 @@ const isMobilePage = computed(() => {
     '/customer-profile', 
     '/content-library',
     '/features/vin-tags',
-    '/features/ai-analysis'
+    '/features/ai-analysis',
+    '/features/add-remark'
   ];
   return mobilePaths.includes(route.path);
 });

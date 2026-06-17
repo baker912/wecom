@@ -19,6 +19,7 @@ import PersonalSOPCreatePage from '../features/personal-sop/PersonalSOPCreatePag
 import ContentLibraryWaterfallPage from '../features/content-library-waterfall/ContentLibraryWaterfallPage.vue'
 import SessionArchivePage from '../features/session-archive/SessionArchivePage.vue'
 import DeleteFriendSettingsPage from '../features/delete-friend-settings/DeleteFriendSettingsPage.vue'
+import AddRemarkPage from '../features/add-remark/AddRemarkPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -106,6 +107,12 @@ const router = createRouter({
       path: '/features/delete-friend-settings',
       name: 'delete-friend-settings',
       component: DeleteFriendSettingsPage
+    },
+    // 需求: 添加备注功能
+    {
+      path: '/features/add-remark',
+      name: 'add-remark',
+      component: AddRemarkPage
     },
     {
       path: '/wecom-sop',

@@ -16,7 +16,7 @@ onMounted(() => {
 });
 
 // Sprint Accordion Logic
-const expandedSprint = ref<string | null>('Sprint 7'); // 默认展开第一个
+const expandedSprint = ref<string | null>('Sprint 8'); // 默认展开第一个
 
 const toggleSprint = (sprintName: string) => {
   if (expandedSprint.value === sprintName) {
@@ -330,8 +330,8 @@ const sprints = ref([
         id: 'REQ-SPRINT8-01',
         title: 'AI智能分析功能',
         module: '客户端',
-        progress: 50,
-        status: '开发中',
+        progress: 100,
+        status: '已完成',
         misId: 'MISMS20260310163158',
         misStatus: '需求实施中',
         version: 'v1.5.4',
@@ -339,6 +339,20 @@ const sprints = ref([
         icon: Sparkles,
         link: '/features/ai-analysis',
         description: '基于大模型能力，为经销商提供客户沟通话术建议及画像深度解析'
+      },
+      {
+        id: 'REQ-SPRINT8-02',
+        title: 'AI自动跟进潜客',
+        module: '客户端',
+        progress: 0,
+        status: '设计中',
+        misId: 'MISMS20260616000001',
+        misStatus: '产品设计中',
+        version: 'v1.0.0',
+        isExternalPrototype: false,
+        icon: FileText,
+        link: '/features/add-remark',
+        description: '基于AI能力，自动跟进潜客意向信息与跟进情况，辅助顾问高效管理客户关系'
       }
     ]
   }
