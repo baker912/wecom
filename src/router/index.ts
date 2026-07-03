@@ -17,6 +17,8 @@ import AudiencePackageCreatePage from '../features/audience-package-management/A
 import AudiencePackageDetailPage from '../features/audience-package-management/AudiencePackageDetailPage.vue'
 import PersonalSOPCreatePage from '../features/personal-sop/PersonalSOPCreatePage.vue'
 import ContentLibraryWaterfallPage from '../features/content-library-waterfall/ContentLibraryWaterfallPage.vue'
+import ContentLibraryAdminPage from '../features/content-library-admin/ContentLibraryAdminPage.vue'
+import ContentLibraryCreatePage from '../features/content-library-admin/ContentLibraryCreatePage.vue'
 import SessionArchivePage from '../features/session-archive/SessionArchivePage.vue'
 import DeleteFriendSettingsPage from '../features/delete-friend-settings/DeleteFriendSettingsPage.vue'
 import AddRemarkPage from '../features/add-remark/AddRemarkPage.vue'
@@ -98,6 +100,16 @@ const router = createRouter({
       path: '/content-library',
       name: 'content-library',
       component: ContentLibraryWaterfallPage
+    },
+    {
+      path: '/content-library-admin',
+      name: 'content-library-admin',
+      component: ContentLibraryAdminPage
+    },
+    {
+      path: '/content-library-admin/create',
+      name: 'content-library-create',
+      component: ContentLibraryCreatePage
     },
     {
       path: '/features/session-archive',

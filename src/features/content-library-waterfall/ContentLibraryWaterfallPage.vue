@@ -91,7 +91,7 @@
                 <!-- 封面图 -->
                 <div class="relative w-full overflow-hidden bg-gray-100 min-h-[100px]">
                   <template v-if="item.type === '纯文本'">
-                      <!-- 纯文本类型的“文本封面” -->
+                      <!-- 纯文本类型的"文本封面" -->
                       <div class="aspect-square w-full bg-gradient-to-br from-gray-50 to-gray-100 p-4 flex flex-col justify-center overflow-hidden">
                         <p class="text-[12px] text-gray-500 leading-relaxed line-clamp-6 italic font-medium">
                           {{ item.description || item.title }}
@@ -127,6 +127,7 @@
                   />
                   <div class="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/40 backdrop-blur-sm text-white text-[10px] flex items-center gap-1">
                     <component :is="contentTypeIcon(item.type)" :size="10" />
+                    <span v-if="item.type === '文章' && item.assetCount > 1">{{ item.assetCount }}张</span>
                   </div>
                   <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent">
                     <div class="flex items-center gap-1 text-white text-[10px] font-medium">
@@ -451,8 +452,30 @@
 
         <!-- 详情滚动区 -->
          <div class="flex-1 overflow-y-auto hide-scrollbar bg-white pb-32">
-           <!-- 媒体展示区 (仅针对非纯文本、非语音类型展示) -->
-           <div v-if="activeItem.type !== '纯文本' && activeItem.type !== '语音'" class="w-full bg-black flex items-center justify-center min-h-[40vh]">
+           <!-- 媒体展示区 -->
+           <!-- 文章类型：图片轮播 -->
+           <div v-if="activeItem.type === '文章' && carouselImages.length > 0" class="w-full bg-black relative overflow-hidden min-h-[40vh]" @touchstart="stopCarousel" @touchend="startCarousel">
+             <div class="flex transition-transform duration-500 ease-out" :style="{ transform: `translateX(-${carouselIndex * 100}%)` }">
+               <div v-for="(img, idx) in carouselImages" :key="idx" class="w-full shrink-0">
+                 <img :src="img" class="w-full h-auto max-h-[75vh] object-contain" />
+               </div>
+             </div>
+             <!-- 轮播指示器 -->
+             <div v-if="carouselImages.length > 1" class="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-1.5 z-10">
+               <button
+                 v-for="(_, idx) in carouselImages"
+                 :key="idx"
+                 @click="goToSlide(idx)"
+                 :class="`h-1.5 rounded-full transition-all ${carouselIndex === idx ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`"
+               />
+             </div>
+             <!-- 图片计数器 -->
+             <div v-if="carouselImages.length > 1" class="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/50 text-white text-[10px] font-bold">
+               {{ carouselIndex + 1 }} / {{ carouselImages.length }}
+             </div>
+           </div>
+           <!-- 其他类型：单图展示 -->
+           <div v-else-if="activeItem.type !== '纯文本' && activeItem.type !== '语音'" class="w-full bg-black flex items-center justify-center min-h-[40vh]">
              <img :src="getCoverUrl(activeItem)" class="w-full h-auto max-h-[75vh] object-contain" />
            </div>
  
@@ -820,6 +843,7 @@ type ContentItem = {
   id: string;
   title: string;
   coverUrl: string;
+  coverImages?: string[]; // 多图轮播（文章类型）
   type: ContentType;
   assetCount: number;
   viewCount: number;
@@ -866,6 +890,34 @@ const isVideoPlaying = ref(false);
 const isVideoLoading = ref(false);
 const videoPlayer = ref<HTMLVideoElement | null>(null);
 const showRadarTooltip = ref(false);
+
+// 文章图片轮播
+const carouselIndex = ref(0);
+const carouselAutoPlay = ref<number | null>(null);
+
+const carouselImages = computed(() => {
+  if (!activeItem.value || activeItem.value.type !== '文章') return [];
+  return activeItem.value.coverImages || (activeItem.value.coverUrl ? [activeItem.value.coverUrl] : []);
+});
+
+const startCarousel = () => {
+  if (carouselAutoPlay.value) return;
+  carouselAutoPlay.value = window.setInterval(() => {
+    if (carouselImages.value.length <= 1) return;
+    carouselIndex.value = (carouselIndex.value + 1) % carouselImages.value.length;
+  }, 3000);
+};
+
+const stopCarousel = () => {
+  if (carouselAutoPlay.value) {
+    clearInterval(carouselAutoPlay.value);
+    carouselAutoPlay.value = null;
+  }
+};
+
+const goToSlide = (index: number) => {
+  carouselIndex.value = index;
+};
 
 const favoriteCount = computed(() => {
   return items.value.filter(i => i.isFavorite).length;
@@ -1045,8 +1097,15 @@ const items = ref<ContentItem[]>([
     id: 'CL-002',
     title: '品牌历史：奥迪百年进取之路',
     coverUrl: 'https://images.unsplash.com/photo-1525609004556-c46c7d6cf023?auto=format&fit=crop&w=800&q=60',
+    coverImages: [
+      'https://images.unsplash.com/photo-1525609004556-c46c7d6cf023?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=800&q=80',
+    ],
     type: '文章',
-    assetCount: 3,
+    assetCount: 5,
     viewCount: 17,
     favCount: 0,
     shareCount: 0,
@@ -1059,7 +1118,7 @@ const items = ref<ContentItem[]>([
     model: '全部',
     category: '品牌文化',
     publishedAt: '2026-04-02',
-    description: '奥迪的品牌历史可以追溯到19世纪末。从奥古斯特·霍希创立品牌，到四环标志的诞生，奥迪始终秉承“突破科技，启迪未来”的核心理念。在百年的发展历程中，奥迪不仅在赛车场上创造了无数辉煌，更在量产车领域不断推陈出新，将豪华、动力与前瞻科技完美结合。今天，奥迪正全面向电动化转型，开启下一个百年的辉煌篇章。我们将持续为您带来最优质的驾驶体验与服务。'
+    description: '奥迪的品牌历史可以追溯到19世纪末。从奥古斯特·霍希创立品牌，到四环标志的诞生，奥迪始终秉承"突破科技，启迪未来"的核心理念。在百年的发展历程中，奥迪不仅在赛车场上创造了无数辉煌，更在量产车领域不断推陈出新，将豪华、动力与前瞻科技完美结合。今天，奥迪正全面向电动化转型，开启下一个百年的辉煌篇章。我们将持续为您带来最优质的驾驶体验与服务。'
   },
   {
     id: 'CL-003',
@@ -1357,6 +1416,8 @@ const clearApplied = (key: AppliedFilterKey) => {
 const openDetail = (id: string) => {
   activeItemId.value = id;
   showDetail.value = true;
+  carouselIndex.value = 0;
+  startCarousel();
   
   // 根据不同类型更新右侧需求原型说明
   if (updateRequirementLogic && activeItem.value) {
@@ -1414,6 +1475,7 @@ const openDetail = (id: string) => {
 };
 
 const closeDetail = () => {
+  stopCarousel();
   if (videoPlayer.value) {
     videoPlayer.value.pause();
   }

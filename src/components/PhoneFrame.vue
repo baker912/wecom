@@ -32,8 +32,8 @@ const requirementInfoMap: Record<string, { title: string; subtitle: string; fold
     ]
   },
   '/content-library': {
-    title: '内容库瀑布流改造',
-    subtitle: '核心需求：瀑布流展示提升多图/长图浏览与内容触达效率',
+    title: '内容库瀑布流改造2.0',
+    subtitle: '核心需求：瀑布流展示提升多图/长图浏览与内容触达效率，2.0版本优化内容展示体验与浏览效率',
     folderPath: 'src/features/content-library-waterfall',
     logic: [
       '瀑布流双列：内容以双列瀑布流方式展示，提升浏览效率。',
@@ -50,6 +50,24 @@ const requirementInfoMap: Record<string, { title: string; subtitle: string; fold
       { type: '小程序', title: '【标题】', cover: '【卡片图片】', content: '-', other: '【AppID/路径】' },
       { type: '纯文本', title: '【标题】', cover: '-', content: '【文本内容】', other: '-' },
       { type: '语音', title: '【语音标题】', cover: '-', content: '-', other: '【音频文件】' }
+    ]
+  },
+  '/content-library-admin': {
+    title: '内容库瀑布流改造2.0 - 素材管理后台',
+    subtitle: '核心需求：后台素材管理，支持素材创建、编辑、删除与列表管理，2.0版本升级瀑布流展示与管理能力',
+    folderPath: 'src/features/content-library-admin',
+    logic: [
+      '素材列表：表格展示所有素材，支持按类型、状态筛选和关键词搜索。',
+      '新建素材：弹窗表单支持填写素材名称、类型（图片/视频/图文）、封面图、标签、描述、正文内容。',
+      '编辑素材：点击编辑可修改已有素材信息，表单自动回填数据。',
+      '删除素材：支持删除不需要的素材条目。',
+      '标签管理：支持添加/删除标签，便于素材分类检索。'
+    ],
+    table: [
+      { type: '素材名称', title: '【素材标题】', cover: '【封面图URL】', content: '【正文内容】', other: '【标签】' },
+      { type: '素材类型', title: '图片/视频/图文', cover: '-', content: '-', other: '-' },
+      { type: '状态', title: '草稿/审核中/已发布', cover: '-', content: '-', other: '-' },
+      { type: '创建信息', title: '-', cover: '-', content: '-', other: '创建人/创建时间/浏览量' }
     ]
   },
   '/customer-profile': {

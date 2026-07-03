@@ -16,7 +16,7 @@ onMounted(() => {
 });
 
 // Sprint Accordion Logic
-const expandedSprint = ref<string | null>('Sprint 8'); // 默认展开第一个
+const expandedSprint = ref<string | null>('Sprint 9'); // 默认展开第一个
 
 const toggleSprint = (sprintName: string) => {
   if (expandedSprint.value === sprintName) {
@@ -64,7 +64,8 @@ const milestones = [
   { date: '2026-04-09', label: 'Sprint 5 发布', color: 'bg-blue-500', sprintName: 'Sprint 5' },
   { date: '2026-04-23', label: 'Sprint 6 发布', color: 'bg-gray-400', sprintName: 'Sprint 6' },
   { date: '2026-05-07', label: 'Sprint 7 发布', color: 'bg-gray-400', sprintName: 'Sprint 7' },
-  { date: '2026-05-21', label: 'Sprint 8 发布', color: 'bg-gray-400', sprintName: 'Sprint 8' }
+  { date: '2026-05-21', label: 'Sprint 8 发布', color: 'bg-gray-400', sprintName: 'Sprint 8' },
+  { date: '2026-06-04', label: 'Sprint 9 发布', color: 'bg-gray-400', sprintName: 'Sprint 9' }
 ];
 
 // 今天的信息和倒计时计算
@@ -353,6 +354,29 @@ const sprints = ref([
         icon: FileText,
         link: '/features/add-remark/customer-profile',
         description: '基于AI能力，自动跟进潜客意向信息与跟进情况，辅助顾问高效管理客户关系'
+      }
+    ]
+  },
+  {
+    name: 'Sprint 9',
+    dateRange: '2026/05/22 - 2026/06/04',
+    status: '规划中',
+    statusColor: 'bg-gray-50 text-gray-500 border border-gray-200',
+    targetDate: '2026-06-04',
+    requirements: [
+      {
+        id: 'REQ-SPRINT9-01',
+        title: '内容库瀑布流改造2.0',
+        module: '客户端',
+        progress: 0,
+        status: '设计中',
+        misId: 'MISMS20260617000001',
+        misStatus: '产品设计中',
+        version: 'v2.0.0',
+        isExternalPrototype: false,
+        icon: LayoutGrid,
+        link: '/content-library-admin',
+        description: '对内容库进行瀑布流布局改造2.0，优化内容展示体验与浏览效率'
       }
     ]
   }
