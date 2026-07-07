@@ -365,10 +365,15 @@
 
           <!-- 右侧交互按钮 (抖音风格：竖状排列) - 增加整体背景色 -->
           <div class="absolute right-3 bottom-6 flex flex-col items-center gap-6 z-[120] bg-white/10 backdrop-blur-xl px-2.5 py-6 rounded-[28px] border border-white/20 shadow-2xl">
-            <!-- 浏览量 -->
+            <!-- 用户浏览量 -->
             <div class="flex flex-col items-center gap-0.5 text-white pointer-events-none">
-              <Eye :size="22" />
+              <Users :size="22" />
               <span class="text-[12px] font-bold leading-none mt-1">{{ activeItem.viewCount }}</span>
+            </div>
+            <!-- 顾问浏览量 -->
+            <div class="flex flex-col items-center gap-0.5 text-white pointer-events-none">
+              <Headset :size="22" />
+              <span class="text-[12px] font-bold leading-none mt-1">{{ activeItem.consultantViewCount }}</span>
             </div>
             <!-- 收藏 -->
             <button class="flex flex-col items-center gap-0.5 transition-all active:scale-90" :class="activeItem.isFavorite ? 'text-red-500' : 'text-white'" @click="handleFavoriteDetail">
@@ -603,10 +608,15 @@
 
         <!-- 固定交互底栏 (悬浮胶囊样式：质感优化版) -->
         <div class="fixed bottom-10 right-6 bg-white/80 backdrop-blur-xl rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.15),0_1px_1px_rgba(0,0,0,0.05)] border border-white/50 ring-1 ring-black/5 px-7 py-2.5 flex items-center gap-9 z-[120] animate-fade-in transition-transform">
-          <!-- 浏览量 -->
-          <div class="flex flex-col items-center gap-0.5 text-gray-600">
-            <Eye :size="20" class="drop-shadow-sm" />
+          <!-- 用户浏览量 -->
+          <div class="flex flex-col items-center gap-0.5 text-gray-600 pointer-events-none">
+            <Users :size="20" class="drop-shadow-sm" />
             <span class="text-[11px] font-bold">{{ activeItem.viewCount }}</span>
+          </div>
+          <!-- 顾问浏览量 -->
+          <div class="flex flex-col items-center gap-0.5 text-gray-600 pointer-events-none">
+            <Headset :size="20" class="drop-shadow-sm" />
+            <span class="text-[11px] font-bold">{{ activeItem.consultantViewCount }}</span>
           </div>
           <!-- 收藏 -->
           <button class="flex flex-col items-center gap-0.5 transition-all active:scale-90" :class="activeItem.isFavorite ? 'text-red-600' : 'text-gray-600'" @click="handleFavoriteDetail">
@@ -834,7 +844,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, inject } from 'vue';
 import { useRouter } from 'vue-router';
-import { ChevronLeft, Eye, Filter, Play, Search, Share2, Star, X, Layers, FolderSearch, FileText, Link, File, BookOpen, Smartphone, Mic, Image, Check, Target, Type } from 'lucide-vue-next';
+import { ChevronLeft, Eye, Filter, Play, Search, Share2, Star, X, Layers, FolderSearch, FileText, Link, File, BookOpen, Smartphone, Mic, Image, Check, Target, Type, Users, Headset } from 'lucide-vue-next';
 
 type ContentType = '图片' | '纯文本' | '视频' | '文件' | '链接' | '文章' | '小程序' | '语音' | '海报';
 type SortMode = '最新发布' | '最多浏览' | '最多收藏';
@@ -847,6 +857,7 @@ type ContentItem = {
   type: ContentType;
   assetCount: number;
   viewCount: number;
+  consultantViewCount: number;
   favCount: number;
   shareCount: number;
   authorName: string;
@@ -1081,6 +1092,7 @@ const items = ref<ContentItem[]>([
     type: '图片',
     assetCount: 1,
     viewCount: 41,
+    consultantViewCount: 12,
     favCount: 1,
     shareCount: 0,
     isFavorite: true,
@@ -1107,6 +1119,7 @@ const items = ref<ContentItem[]>([
     type: '文章',
     assetCount: 5,
     viewCount: 17,
+    consultantViewCount: 5,
     favCount: 0,
     shareCount: 0,
     isFavorite: false,
@@ -1127,6 +1140,7 @@ const items = ref<ContentItem[]>([
     type: '视频',
     assetCount: 1,
     viewCount: 2580,
+    consultantViewCount: 890,
     favCount: 124,
     shareCount: 45,
     isFavorite: true,
@@ -1149,6 +1163,7 @@ const items = ref<ContentItem[]>([
     type: '海报',
     assetCount: 1,
     viewCount: 150,
+    consultantViewCount: 42,
     favCount: 5,
     shareCount: 0,
     isFavorite: false,
@@ -1169,6 +1184,7 @@ const items = ref<ContentItem[]>([
     type: '链接',
     assetCount: 1,
     viewCount: 96,
+    consultantViewCount: 28,
     favCount: 3,
     shareCount: 0,
     isFavorite: true,
@@ -1190,6 +1206,7 @@ const items = ref<ContentItem[]>([
     type: '纯文本',
     assetCount: 1,
     viewCount: 34,
+    consultantViewCount: 8,
     favCount: 0,
     shareCount: 0,
     isFavorite: false,
@@ -1210,6 +1227,7 @@ const items = ref<ContentItem[]>([
     type: '小程序',
     assetCount: 1,
     viewCount: 58,
+    consultantViewCount: 15,
     favCount: 1,
     shareCount: 0,
     isFavorite: false,
@@ -1231,6 +1249,7 @@ const items = ref<ContentItem[]>([
     type: '语音',
     assetCount: 1,
     viewCount: 22,
+    consultantViewCount: 6,
     favCount: 0,
     shareCount: 0,
     isFavorite: false,
@@ -1250,6 +1269,7 @@ const items = ref<ContentItem[]>([
     type: '文件',
     assetCount: 1,
     viewCount: 88,
+    consultantViewCount: 24,
     favCount: 5,
     shareCount: 0,
     isFavorite: true,
@@ -1271,6 +1291,7 @@ const items = ref<ContentItem[]>([
     type: '链接',
     assetCount: 1,
     viewCount: 124,
+    consultantViewCount: 35,
     favCount: 8,
     shareCount: 2,
     isFavorite: false,
